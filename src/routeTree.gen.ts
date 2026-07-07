@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as FeaturesRouteImport } from './routes/features'
 import { Route as DocsRouteImport } from './routes/docs'
@@ -23,6 +24,11 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedProjectsIndexRouteImport } from './routes/_authenticated/projects.index'
 import { Route as AuthenticatedProjectsIdRouteImport } from './routes/_authenticated/projects.$id'
 
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PricingRoute = PricingRouteImport.update({
   id: '/pricing',
   path: '/pricing',
@@ -96,6 +102,7 @@ export interface FileRoutesByFullPath {
   '/docs': typeof DocsRoute
   '/features': typeof FeaturesRoute
   '/pricing': typeof PricingRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/deploy': typeof AuthenticatedDeployRoute
   '/deployments': typeof AuthenticatedDeploymentsRoute
@@ -110,6 +117,7 @@ export interface FileRoutesByTo {
   '/docs': typeof DocsRoute
   '/features': typeof FeaturesRoute
   '/pricing': typeof PricingRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/deploy': typeof AuthenticatedDeployRoute
   '/deployments': typeof AuthenticatedDeploymentsRoute
@@ -126,6 +134,7 @@ export interface FileRoutesById {
   '/docs': typeof DocsRoute
   '/features': typeof FeaturesRoute
   '/pricing': typeof PricingRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/deploy': typeof AuthenticatedDeployRoute
   '/_authenticated/deployments': typeof AuthenticatedDeploymentsRoute
@@ -142,6 +151,7 @@ export interface FileRouteTypes {
     | '/docs'
     | '/features'
     | '/pricing'
+    | '/sitemap.xml'
     | '/dashboard'
     | '/deploy'
     | '/deployments'
@@ -156,6 +166,7 @@ export interface FileRouteTypes {
     | '/docs'
     | '/features'
     | '/pricing'
+    | '/sitemap.xml'
     | '/dashboard'
     | '/deploy'
     | '/deployments'
@@ -171,6 +182,7 @@ export interface FileRouteTypes {
     | '/docs'
     | '/features'
     | '/pricing'
+    | '/sitemap.xml'
     | '/_authenticated/dashboard'
     | '/_authenticated/deploy'
     | '/_authenticated/deployments'
@@ -187,10 +199,18 @@ export interface RootRouteChildren {
   DocsRoute: typeof DocsRoute
   FeaturesRoute: typeof FeaturesRoute
   PricingRoute: typeof PricingRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/pricing': {
       id: '/pricing'
       path: '/pricing'
@@ -315,6 +335,7 @@ const rootRouteChildren: RootRouteChildren = {
   DocsRoute: DocsRoute,
   FeaturesRoute: FeaturesRoute,
   PricingRoute: PricingRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
