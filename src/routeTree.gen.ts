@@ -20,6 +20,7 @@ import { Route as AuthenticatedDeploymentsRouteImport } from './routes/_authenti
 import { Route as AuthenticatedDeployRouteImport } from './routes/_authenticated/deploy'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedProjectsIndexRouteImport } from './routes/_authenticated/projects.index'
+import { Route as AuthenticatedProjectsIdRouteImport } from './routes/_authenticated/projects.$id'
 
 const PricingRoute = PricingRouteImport.update({
   id: '/pricing',
@@ -77,6 +78,11 @@ const AuthenticatedProjectsIndexRoute =
     path: '/projects/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedProjectsIdRoute = AuthenticatedProjectsIdRouteImport.update({
+  id: '/projects/$id',
+  path: '/projects/$id',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -88,6 +94,7 @@ export interface FileRoutesByFullPath {
   '/deploy': typeof AuthenticatedDeployRoute
   '/deployments': typeof AuthenticatedDeploymentsRoute
   '/domains': typeof AuthenticatedDomainsRoute
+  '/projects/$id': typeof AuthenticatedProjectsIdRoute
   '/projects/': typeof AuthenticatedProjectsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -100,6 +107,7 @@ export interface FileRoutesByTo {
   '/deploy': typeof AuthenticatedDeployRoute
   '/deployments': typeof AuthenticatedDeploymentsRoute
   '/domains': typeof AuthenticatedDomainsRoute
+  '/projects/$id': typeof AuthenticatedProjectsIdRoute
   '/projects': typeof AuthenticatedProjectsIndexRoute
 }
 export interface FileRoutesById {
@@ -114,6 +122,7 @@ export interface FileRoutesById {
   '/_authenticated/deploy': typeof AuthenticatedDeployRoute
   '/_authenticated/deployments': typeof AuthenticatedDeploymentsRoute
   '/_authenticated/domains': typeof AuthenticatedDomainsRoute
+  '/_authenticated/projects/$id': typeof AuthenticatedProjectsIdRoute
   '/_authenticated/projects/': typeof AuthenticatedProjectsIndexRoute
 }
 export interface FileRouteTypes {
@@ -128,6 +137,7 @@ export interface FileRouteTypes {
     | '/deploy'
     | '/deployments'
     | '/domains'
+    | '/projects/$id'
     | '/projects/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -140,6 +150,7 @@ export interface FileRouteTypes {
     | '/deploy'
     | '/deployments'
     | '/domains'
+    | '/projects/$id'
     | '/projects'
   id:
     | '__root__'
@@ -153,6 +164,7 @@ export interface FileRouteTypes {
     | '/_authenticated/deploy'
     | '/_authenticated/deployments'
     | '/_authenticated/domains'
+    | '/_authenticated/projects/$id'
     | '/_authenticated/projects/'
   fileRoutesById: FileRoutesById
 }
@@ -244,6 +256,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProjectsIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/projects/$id': {
+      id: '/_authenticated/projects/$id'
+      path: '/projects/$id'
+      fullPath: '/projects/$id'
+      preLoaderRoute: typeof AuthenticatedProjectsIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
@@ -252,6 +271,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDeployRoute: typeof AuthenticatedDeployRoute
   AuthenticatedDeploymentsRoute: typeof AuthenticatedDeploymentsRoute
   AuthenticatedDomainsRoute: typeof AuthenticatedDomainsRoute
+  AuthenticatedProjectsIdRoute: typeof AuthenticatedProjectsIdRoute
   AuthenticatedProjectsIndexRoute: typeof AuthenticatedProjectsIndexRoute
 }
 
@@ -260,6 +280,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDeployRoute: AuthenticatedDeployRoute,
   AuthenticatedDeploymentsRoute: AuthenticatedDeploymentsRoute,
   AuthenticatedDomainsRoute: AuthenticatedDomainsRoute,
+  AuthenticatedProjectsIdRoute: AuthenticatedProjectsIdRoute,
   AuthenticatedProjectsIndexRoute: AuthenticatedProjectsIndexRoute,
 }
 
