@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /projects
+Disallow: /deployments
+Disallow: /domains
+Disallow: /settings
+Disallow: /deploy
+
+Sitemap: https://deploy.egreedtech.org/sitemap.xml
