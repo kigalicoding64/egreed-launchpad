@@ -8,7 +8,7 @@ import { useProjects } from "@/lib/queries";
 import { PROJECT_STATUS_META, frameworkMeta } from "@/lib/egreed";
 import { formatDistanceToNow } from "date-fns";
 
-export const Route = createFileRoute("/_authenticated/projects")({
+export const Route = createFileRoute("/_authenticated/projects/")({
   component: ProjectsPage,
 });
 
