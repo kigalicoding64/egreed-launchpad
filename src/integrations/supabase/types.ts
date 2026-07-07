@@ -14,16 +14,301 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      deployments: {
+        Row: {
+          branch: string
+          build_logs: string | null
+          commit_hash: string | null
+          commit_message: string | null
+          created_at: string
+          finished_at: string | null
+          id: string
+          project_id: string
+          status: Database["public"]["Enums"]["deployment_status"]
+          triggered_by: string
+          user_id: string
+        }
+        Insert: {
+          branch?: string
+          build_logs?: string | null
+          commit_hash?: string | null
+          commit_message?: string | null
+          created_at?: string
+          finished_at?: string | null
+          id?: string
+          project_id: string
+          status?: Database["public"]["Enums"]["deployment_status"]
+          triggered_by?: string
+          user_id: string
+        }
+        Update: {
+          branch?: string
+          build_logs?: string | null
+          commit_hash?: string | null
+          commit_message?: string | null
+          created_at?: string
+          finished_at?: string | null
+          id?: string
+          project_id?: string
+          status?: Database["public"]["Enums"]["deployment_status"]
+          triggered_by?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deployments_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      domains: {
+        Row: {
+          created_at: string
+          full_domain: string
+          id: string
+          is_primary: boolean
+          project_id: string
+          ssl_status: Database["public"]["Enums"]["ssl_status"]
+          subdomain: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          full_domain: string
+          id?: string
+          is_primary?: boolean
+          project_id: string
+          ssl_status?: Database["public"]["Enums"]["ssl_status"]
+          subdomain: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          full_domain?: string
+          id?: string
+          is_primary?: boolean
+          project_id?: string
+          ssl_status?: Database["public"]["Enums"]["ssl_status"]
+          subdomain?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "domains_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      env_vars: {
+        Row: {
+          created_at: string
+          id: string
+          key: string
+          project_id: string
+          target: Database["public"]["Enums"]["env_target"]
+          updated_at: string
+          user_id: string
+          value: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          key: string
+          project_id: string
+          target?: Database["public"]["Enums"]["env_target"]
+          updated_at?: string
+          user_id: string
+          value: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          key?: string
+          project_id?: string
+          target?: Database["public"]["Enums"]["env_target"]
+          updated_at?: string
+          user_id?: string
+          value?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "env_vars_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      github_connections: {
+        Row: {
+          account_type: string
+          avatar_url: string | null
+          connected_at: string
+          github_user_id: string | null
+          github_username: string
+          id: string
+          installation_id: string | null
+          user_id: string
+        }
+        Insert: {
+          account_type?: string
+          avatar_url?: string | null
+          connected_at?: string
+          github_user_id?: string | null
+          github_username: string
+          id?: string
+          installation_id?: string | null
+          user_id: string
+        }
+        Update: {
+          account_type?: string
+          avatar_url?: string | null
+          connected_at?: string
+          github_user_id?: string | null
+          github_username?: string
+          id?: string
+          installation_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          email: string | null
+          id: string
+          name: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      projects: {
+        Row: {
+          auto_deploy: boolean
+          branch: string
+          build_command: string | null
+          created_at: string
+          domain: string | null
+          framework: string
+          id: string
+          name: string
+          repository_name: string
+          repository_url: string
+          status: Database["public"]["Enums"]["project_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          auto_deploy?: boolean
+          branch?: string
+          build_command?: string | null
+          created_at?: string
+          domain?: string | null
+          framework?: string
+          id?: string
+          name: string
+          repository_name: string
+          repository_url: string
+          status?: Database["public"]["Enums"]["project_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          auto_deploy?: boolean
+          branch?: string
+          build_command?: string | null
+          created_at?: string
+          domain?: string | null
+          framework?: string
+          id?: string
+          name?: string
+          repository_name?: string
+          repository_url?: string
+          status?: Database["public"]["Enums"]["project_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "member"
+      deployment_status:
+        | "queued"
+        | "building"
+        | "deploying"
+        | "online"
+        | "failed"
+        | "canceled"
+      env_target: "production" | "preview" | "development"
+      project_status:
+        | "queued"
+        | "building"
+        | "deploying"
+        | "online"
+        | "failed"
+        | "paused"
+      ssl_status: "pending" | "active" | "failed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +435,26 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "member"],
+      deployment_status: [
+        "queued",
+        "building",
+        "deploying",
+        "online",
+        "failed",
+        "canceled",
+      ],
+      env_target: ["production", "preview", "development"],
+      project_status: [
+        "queued",
+        "building",
+        "deploying",
+        "online",
+        "failed",
+        "paused",
+      ],
+      ssl_status: ["pending", "active", "failed"],
+    },
   },
 } as const
