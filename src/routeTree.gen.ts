@@ -17,6 +17,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedDomainsRouteImport } from './routes/_authenticated/domains'
 import { Route as AuthenticatedDeploymentsRouteImport } from './routes/_authenticated/deployments'
+import { Route as AuthenticatedDeployRouteImport } from './routes/_authenticated/deploy'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedProjectsIndexRouteImport } from './routes/_authenticated/projects.index'
 
@@ -60,6 +61,11 @@ const AuthenticatedDeploymentsRoute =
     path: '/deployments',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedDeployRoute = AuthenticatedDeployRouteImport.update({
+  id: '/deploy',
+  path: '/deploy',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -79,6 +85,7 @@ export interface FileRoutesByFullPath {
   '/features': typeof FeaturesRoute
   '/pricing': typeof PricingRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/deploy': typeof AuthenticatedDeployRoute
   '/deployments': typeof AuthenticatedDeploymentsRoute
   '/domains': typeof AuthenticatedDomainsRoute
   '/projects/': typeof AuthenticatedProjectsIndexRoute
@@ -90,6 +97,7 @@ export interface FileRoutesByTo {
   '/features': typeof FeaturesRoute
   '/pricing': typeof PricingRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/deploy': typeof AuthenticatedDeployRoute
   '/deployments': typeof AuthenticatedDeploymentsRoute
   '/domains': typeof AuthenticatedDomainsRoute
   '/projects': typeof AuthenticatedProjectsIndexRoute
@@ -103,6 +111,7 @@ export interface FileRoutesById {
   '/features': typeof FeaturesRoute
   '/pricing': typeof PricingRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/deploy': typeof AuthenticatedDeployRoute
   '/_authenticated/deployments': typeof AuthenticatedDeploymentsRoute
   '/_authenticated/domains': typeof AuthenticatedDomainsRoute
   '/_authenticated/projects/': typeof AuthenticatedProjectsIndexRoute
@@ -116,6 +125,7 @@ export interface FileRouteTypes {
     | '/features'
     | '/pricing'
     | '/dashboard'
+    | '/deploy'
     | '/deployments'
     | '/domains'
     | '/projects/'
@@ -127,6 +137,7 @@ export interface FileRouteTypes {
     | '/features'
     | '/pricing'
     | '/dashboard'
+    | '/deploy'
     | '/deployments'
     | '/domains'
     | '/projects'
@@ -139,6 +150,7 @@ export interface FileRouteTypes {
     | '/features'
     | '/pricing'
     | '/_authenticated/dashboard'
+    | '/_authenticated/deploy'
     | '/_authenticated/deployments'
     | '/_authenticated/domains'
     | '/_authenticated/projects/'
@@ -211,6 +223,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDeploymentsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/deploy': {
+      id: '/_authenticated/deploy'
+      path: '/deploy'
+      fullPath: '/deploy'
+      preLoaderRoute: typeof AuthenticatedDeployRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
@@ -230,6 +249,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedDeployRoute: typeof AuthenticatedDeployRoute
   AuthenticatedDeploymentsRoute: typeof AuthenticatedDeploymentsRoute
   AuthenticatedDomainsRoute: typeof AuthenticatedDomainsRoute
   AuthenticatedProjectsIndexRoute: typeof AuthenticatedProjectsIndexRoute
@@ -237,6 +257,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedDeployRoute: AuthenticatedDeployRoute,
   AuthenticatedDeploymentsRoute: AuthenticatedDeploymentsRoute,
   AuthenticatedDomainsRoute: AuthenticatedDomainsRoute,
   AuthenticatedProjectsIndexRoute: AuthenticatedProjectsIndexRoute,
