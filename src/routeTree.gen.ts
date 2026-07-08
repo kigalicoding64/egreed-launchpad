@@ -24,6 +24,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedProjectsIndexRouteImport } from './routes/_authenticated/projects.index'
 import { Route as AuthenticatedProjectsIdRouteImport } from './routes/_authenticated/projects.$id'
 import { Route as ApiPublicWebhooksGithubRouteImport } from './routes/api/public/webhooks/github'
+import { Route as ApiPublicHooksSslRenewRouteImport } from './routes/api/public/hooks/ssl-renew'
 
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
@@ -101,6 +102,11 @@ const ApiPublicWebhooksGithubRoute = ApiPublicWebhooksGithubRouteImport.update({
   path: '/api/public/webhooks/github',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicHooksSslRenewRoute = ApiPublicHooksSslRenewRouteImport.update({
+  id: '/api/public/hooks/ssl-renew',
+  path: '/api/public/hooks/ssl-renew',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -116,6 +122,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AuthenticatedSettingsRoute
   '/projects/$id': typeof AuthenticatedProjectsIdRoute
   '/projects/': typeof AuthenticatedProjectsIndexRoute
+  '/api/public/hooks/ssl-renew': typeof ApiPublicHooksSslRenewRoute
   '/api/public/webhooks/github': typeof ApiPublicWebhooksGithubRoute
 }
 export interface FileRoutesByTo {
@@ -132,6 +139,7 @@ export interface FileRoutesByTo {
   '/settings': typeof AuthenticatedSettingsRoute
   '/projects/$id': typeof AuthenticatedProjectsIdRoute
   '/projects': typeof AuthenticatedProjectsIndexRoute
+  '/api/public/hooks/ssl-renew': typeof ApiPublicHooksSslRenewRoute
   '/api/public/webhooks/github': typeof ApiPublicWebhooksGithubRoute
 }
 export interface FileRoutesById {
@@ -150,6 +158,7 @@ export interface FileRoutesById {
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/projects/$id': typeof AuthenticatedProjectsIdRoute
   '/_authenticated/projects/': typeof AuthenticatedProjectsIndexRoute
+  '/api/public/hooks/ssl-renew': typeof ApiPublicHooksSslRenewRoute
   '/api/public/webhooks/github': typeof ApiPublicWebhooksGithubRoute
 }
 export interface FileRouteTypes {
@@ -168,6 +177,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/projects/$id'
     | '/projects/'
+    | '/api/public/hooks/ssl-renew'
     | '/api/public/webhooks/github'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -184,6 +194,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/projects/$id'
     | '/projects'
+    | '/api/public/hooks/ssl-renew'
     | '/api/public/webhooks/github'
   id:
     | '__root__'
@@ -201,6 +212,7 @@ export interface FileRouteTypes {
     | '/_authenticated/settings'
     | '/_authenticated/projects/$id'
     | '/_authenticated/projects/'
+    | '/api/public/hooks/ssl-renew'
     | '/api/public/webhooks/github'
   fileRoutesById: FileRoutesById
 }
@@ -212,6 +224,7 @@ export interface RootRouteChildren {
   FeaturesRoute: typeof FeaturesRoute
   PricingRoute: typeof PricingRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  ApiPublicHooksSslRenewRoute: typeof ApiPublicHooksSslRenewRoute
   ApiPublicWebhooksGithubRoute: typeof ApiPublicWebhooksGithubRoute
 }
 
@@ -322,6 +335,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicWebhooksGithubRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/ssl-renew': {
+      id: '/api/public/hooks/ssl-renew'
+      path: '/api/public/hooks/ssl-renew'
+      fullPath: '/api/public/hooks/ssl-renew'
+      preLoaderRoute: typeof ApiPublicHooksSslRenewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -356,6 +376,7 @@ const rootRouteChildren: RootRouteChildren = {
   FeaturesRoute: FeaturesRoute,
   PricingRoute: PricingRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  ApiPublicHooksSslRenewRoute: ApiPublicHooksSslRenewRoute,
   ApiPublicWebhooksGithubRoute: ApiPublicWebhooksGithubRoute,
 }
 export const routeTree = rootRouteImport
