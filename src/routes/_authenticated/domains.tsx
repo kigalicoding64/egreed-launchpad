@@ -6,7 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { useDomains, useProjects, useRefreshDomain } from "@/lib/queries";
 import { SSL_STATUS_META, DNS_STATUS_META, ROOT_DOMAIN } from "@/lib/egreed";
-import { format } from "date-fns";
+
 
 export const Route = createFileRoute("/_authenticated/domains")({
   component: DomainsPage,
