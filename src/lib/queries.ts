@@ -1,9 +1,13 @@
+import { useEffect } from "react";
 import {
   useMutation,
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
+import { triggerDeployment } from "@/lib/deployments.functions";
+import { provisionDomain, refreshDomain } from "@/lib/domains.functions";
 import {
   buildLogsFor,
   subdomainFor,
@@ -246,34 +250,72 @@ export function useDeployments(projectId?: string) {
 
 export function useRedeploy() {
   const qc = useQueryClient();
+  const trigger = useServerFn(triggerDeployment);
   return useMutation({
-    mutationFn: async (project: Project) => {
-      const user_id = await currentUserId();
-      const { data, error } = await db
-        .from("deployments")
-        .insert({
-          user_id,
-          project_id: project.id,
-          commit_hash: Math.random().toString(16).slice(2, 9),
-          commit_message: "Redeploy from dashboard",
+    mutationFn: async (project: Project) =>
+      trigger({
+        data: {
+          projectId: project.id,
+          commitMessage: "Redeploy from dashboard",
           branch: project.branch,
-          status: "online",
-          triggered_by: "manual",
-          build_logs: buildLogsFor(project),
-          finished_at: new Date().toISOString(),
-        })
-        .select()
-        .single();
-      if (error) throw error;
-      await db.from("projects").update({ status: "online" }).eq("id", project.id);
-      return data as Deployment;
-    },
+        },
+      }),
     onSuccess: (_d, project) => {
       qc.invalidateQueries({ queryKey: ["deployments"] });
       qc.invalidateQueries({ queryKey: ["projects"] });
       qc.invalidateQueries({ queryKey: ["project", project.id] });
+      qc.invalidateQueries({ queryKey: ["domains"] });
     },
   });
+}
+
+/** Trigger a brand-new deployment job for a project. */
+export function useTriggerDeployment() {
+  const qc = useQueryClient();
+  const trigger = useServerFn(triggerDeployment);
+  return useMutation({
+    mutationFn: async (input: { projectId: string; commitMessage?: string; branch?: string }) =>
+      trigger({ data: input }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["deployments"] });
+      qc.invalidateQueries({ queryKey: ["projects"] });
+      qc.invalidateQueries({ queryKey: ["domains"] });
+    },
+  });
+}
+
+/**
+ * Subscribe to realtime changes and keep React Query caches fresh, so
+ * deployment/domain status updates stream into the UI without polling.
+ */
+export function useRealtimeSync() {
+  const qc = useQueryClient();
+  useEffect(() => {
+    const channel = supabase
+      .channel("egreed-live")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "deployments" },
+        () => {
+          qc.invalidateQueries({ queryKey: ["deployments"] });
+          qc.invalidateQueries({ queryKey: ["projects"] });
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "domains" },
+        () => qc.invalidateQueries({ queryKey: ["domains"] }),
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "projects" },
+        () => qc.invalidateQueries({ queryKey: ["projects"] }),
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [qc]);
 }
 
 /* ---------------- Domains ---------------- */
@@ -288,6 +330,26 @@ export function useDomains(projectId?: string) {
       if (error) throw error;
       return (data ?? []) as Domain[];
     },
+  });
+}
+
+/** Provision (or re-provision) DNS + SSL for a project's primary domain. */
+export function useProvisionDomain() {
+  const qc = useQueryClient();
+  const fn = useServerFn(provisionDomain);
+  return useMutation({
+    mutationFn: async (projectId: string) => fn({ data: { projectId } }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["domains"] }),
+  });
+}
+
+/** Re-check DNS and renew SSL for a single domain. */
+export function useRefreshDomain() {
+  const qc = useQueryClient();
+  const fn = useServerFn(refreshDomain);
+  return useMutation({
+    mutationFn: async (domainId: string) => fn({ data: { domainId } }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["domains"] }),
   });
 }
 

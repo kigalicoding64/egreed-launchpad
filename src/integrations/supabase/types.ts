@@ -21,11 +21,15 @@ export type Database = {
           commit_hash: string | null
           commit_message: string | null
           created_at: string
+          deploy_url: string | null
           finished_at: string | null
+          github_event: string | null
           id: string
+          progress: number
           project_id: string
           status: Database["public"]["Enums"]["deployment_status"]
           triggered_by: string
+          updated_at: string
           user_id: string
         }
         Insert: {
@@ -34,11 +38,15 @@ export type Database = {
           commit_hash?: string | null
           commit_message?: string | null
           created_at?: string
+          deploy_url?: string | null
           finished_at?: string | null
+          github_event?: string | null
           id?: string
+          progress?: number
           project_id: string
           status?: Database["public"]["Enums"]["deployment_status"]
           triggered_by?: string
+          updated_at?: string
           user_id: string
         }
         Update: {
@@ -47,11 +55,15 @@ export type Database = {
           commit_hash?: string | null
           commit_message?: string | null
           created_at?: string
+          deploy_url?: string | null
           finished_at?: string | null
+          github_event?: string | null
           id?: string
+          progress?: number
           project_id?: string
           status?: Database["public"]["Enums"]["deployment_status"]
           triggered_by?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: [
@@ -66,33 +78,60 @@ export type Database = {
       }
       domains: {
         Row: {
+          cloudflare_record_id: string | null
           created_at: string
+          dns_status: Database["public"]["Enums"]["dns_status"]
+          dns_target: string | null
+          dns_type: string
           full_domain: string
           id: string
           is_primary: boolean
+          last_checked_at: string | null
           project_id: string
+          ssl_expires_at: string | null
+          ssl_provisioned_at: string | null
+          ssl_renewed_at: string | null
           ssl_status: Database["public"]["Enums"]["ssl_status"]
           subdomain: string
+          updated_at: string
           user_id: string
         }
         Insert: {
+          cloudflare_record_id?: string | null
           created_at?: string
+          dns_status?: Database["public"]["Enums"]["dns_status"]
+          dns_target?: string | null
+          dns_type?: string
           full_domain: string
           id?: string
           is_primary?: boolean
+          last_checked_at?: string | null
           project_id: string
+          ssl_expires_at?: string | null
+          ssl_provisioned_at?: string | null
+          ssl_renewed_at?: string | null
           ssl_status?: Database["public"]["Enums"]["ssl_status"]
           subdomain: string
+          updated_at?: string
           user_id: string
         }
         Update: {
+          cloudflare_record_id?: string | null
           created_at?: string
+          dns_status?: Database["public"]["Enums"]["dns_status"]
+          dns_target?: string | null
+          dns_type?: string
           full_domain?: string
           id?: string
           is_primary?: boolean
+          last_checked_at?: string | null
           project_id?: string
+          ssl_expires_at?: string | null
+          ssl_provisioned_at?: string | null
+          ssl_renewed_at?: string | null
           ssl_status?: Database["public"]["Enums"]["ssl_status"]
           subdomain?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: [
@@ -278,6 +317,56 @@ export type Database = {
         }
         Relationships: []
       }
+      webhook_events: {
+        Row: {
+          created_at: string
+          delivery_id: string | null
+          error: string | null
+          event_type: string
+          id: string
+          payload: Json | null
+          processed: boolean
+          project_id: string | null
+          provider: string
+          signature_valid: boolean
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          delivery_id?: string | null
+          error?: string | null
+          event_type: string
+          id?: string
+          payload?: Json | null
+          processed?: boolean
+          project_id?: string | null
+          provider?: string
+          signature_valid?: boolean
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          delivery_id?: string | null
+          error?: string | null
+          event_type?: string
+          id?: string
+          payload?: Json | null
+          processed?: boolean
+          project_id?: string | null
+          provider?: string
+          signature_valid?: boolean
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webhook_events_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -300,6 +389,7 @@ export type Database = {
         | "online"
         | "failed"
         | "canceled"
+      dns_status: "pending" | "active" | "failed"
       env_target: "production" | "preview" | "development"
       project_status:
         | "queued"
@@ -445,6 +535,7 @@ export const Constants = {
         "failed",
         "canceled",
       ],
+      dns_status: ["pending", "active", "failed"],
       env_target: ["production", "preview", "development"],
       project_status: [
         "queued",

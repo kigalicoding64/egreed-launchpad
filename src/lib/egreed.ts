@@ -28,7 +28,11 @@ export type DeploymentStatus =
   | "canceled";
 
 export type SslStatus = "pending" | "active" | "failed";
+export type DnsStatus = "pending" | "active" | "failed";
 export type EnvTarget = "production" | "preview" | "development";
+
+// CNAME target that project subdomains point at (the platform ingress host).
+export const DNS_TARGET = "ingress.egreedtech.org";
 
 export interface Profile {
   id: string;
@@ -76,7 +80,11 @@ export interface Deployment {
   status: DeploymentStatus;
   build_logs: string | null;
   triggered_by: string;
+  progress: number;
+  github_event: string | null;
+  deploy_url: string | null;
   created_at: string;
+  updated_at: string;
   finished_at: string | null;
 }
 
@@ -87,8 +95,17 @@ export interface Domain {
   subdomain: string;
   full_domain: string;
   ssl_status: SslStatus;
+  dns_status: DnsStatus;
+  cloudflare_record_id: string | null;
+  dns_type: string;
+  dns_target: string | null;
+  last_checked_at: string | null;
+  ssl_provisioned_at: string | null;
+  ssl_renewed_at: string | null;
+  ssl_expires_at: string | null;
   is_primary: boolean;
   created_at: string;
+  updated_at: string;
 }
 
 export interface EnvVar {
@@ -196,6 +213,31 @@ export const SSL_STATUS_META: Record<SslStatus, { label: string; tone: Tone }> =
   active: { label: "Active", tone: "success" },
   failed: { label: "Failed", tone: "danger" },
 };
+
+export const DNS_STATUS_META: Record<DnsStatus, { label: string; tone: Tone }> = {
+  pending: { label: "Propagating", tone: "warning" },
+  active: { label: "Resolved", tone: "success" },
+  failed: { label: "Failed", tone: "danger" },
+};
+
+/* ---------- Deployment job phases (state machine) ---------- */
+
+export interface DeployPhase {
+  status: DeploymentStatus;
+  progress: number;
+  label: string;
+  log: string;
+}
+
+/** Ordered phases the deployment engine advances through. */
+export const DEPLOY_PHASES: DeployPhase[] = [
+  { status: "building", progress: 10, label: "Cloning repository", log: "> Cloning repository from GitHub …" },
+  { status: "building", progress: 30, label: "Installing dependencies", log: "> Installing dependencies …" },
+  { status: "building", progress: 55, label: "Building project", log: "> Running build …" },
+  { status: "deploying", progress: 75, label: "Creating container", log: "> Creating isolated container …" },
+  { status: "deploying", progress: 88, label: "Configuring domain & SSL", log: "> Configuring domain and provisioning SSL …" },
+  { status: "online", progress: 100, label: "Live", log: "✓ Deployment successful" },
+];
 
 /* ---------- Sample repositories (GitHub connect flow, data-only) ---------- */
 

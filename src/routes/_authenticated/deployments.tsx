@@ -55,6 +55,14 @@ function DeploymentsPage() {
                     <p className="truncate text-xs text-muted-foreground">
                       {d.commit_message ?? "Deployment"}
                     </p>
+                    {(d.status === "building" || d.status === "deploying") && (
+                      <div className="mt-2 h-1.5 w-full max-w-xs overflow-hidden rounded-full bg-secondary">
+                        <div
+                          className="h-full rounded-full bg-primary transition-all duration-500"
+                          style={{ width: `${d.progress ?? 0}%` }}
+                        />
+                      </div>
+                    )}
                   </div>
                   <div className="hidden text-right sm:block">
                     <p className="font-mono text-xs text-foreground">

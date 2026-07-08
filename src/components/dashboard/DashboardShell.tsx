@@ -20,7 +20,7 @@ import {
   AvatarImage,
 } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
-import { useProfile } from "@/lib/queries";
+import { useProfile, useRealtimeSync } from "@/lib/queries";
 import { cn } from "@/lib/utils";
 
 const NAV = [
@@ -37,6 +37,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
   const qc = useQueryClient();
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  useRealtimeSync();
 
   async function handleSignOut() {
     await qc.cancelQueries();

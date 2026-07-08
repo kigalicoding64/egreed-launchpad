@@ -1,11 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Globe, ExternalLink, ShieldCheck } from "lucide-react";
+import { Globe, ExternalLink, ShieldCheck, RefreshCw, Loader2 } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/DashboardShell";
 import { StatusBadge } from "@/components/brand/StatusBadge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useDomains, useProjects } from "@/lib/queries";
-import { SSL_STATUS_META, ROOT_DOMAIN } from "@/lib/egreed";
-import { format } from "date-fns";
+import { toast } from "sonner";
+import { useDomains, useProjects, useRefreshDomain } from "@/lib/queries";
+import { SSL_STATUS_META, DNS_STATUS_META, ROOT_DOMAIN } from "@/lib/egreed";
+
 
 export const Route = createFileRoute("/_authenticated/domains")({
   component: DomainsPage,
@@ -14,6 +15,7 @@ export const Route = createFileRoute("/_authenticated/domains")({
 function DomainsPage() {
   const { data: domains, isLoading } = useDomains();
   const { data: projects } = useProjects();
+  const refresh = useRefreshDomain();
 
   const projectName = (id: string) => projects?.find((p) => p.id === id)?.name ?? "Project";
 
@@ -21,7 +23,7 @@ function DomainsPage() {
     <div>
       <PageHeader
         title="Domains"
-        description={`Subdomains assigned under ${ROOT_DOMAIN} with automatic SSL.`}
+        description={`Subdomains assigned under ${ROOT_DOMAIN} with automatic DNS + SSL.`}
       />
 
       {isLoading ? (
@@ -42,19 +44,21 @@ function DomainsPage() {
         </div>
       ) : (
         <div className="overflow-hidden rounded-2xl border border-border bg-card">
-          <div className="hidden grid-cols-[1fr_140px_120px_120px] gap-4 border-b border-border px-5 py-3 text-xs font-medium uppercase tracking-wide text-muted-foreground sm:grid">
+          <div className="hidden grid-cols-[1fr_130px_110px_110px_90px] gap-4 border-b border-border px-5 py-3 text-xs font-medium uppercase tracking-wide text-muted-foreground sm:grid">
             <span>Domain</span>
             <span>Project</span>
+            <span>DNS</span>
             <span>SSL</span>
-            <span className="text-right">Created</span>
+            <span className="text-right">Renew</span>
           </div>
           <div className="divide-y divide-border">
             {(domains ?? []).map((d) => {
-              const meta = SSL_STATUS_META[d.ssl_status];
+              const ssl = SSL_STATUS_META[d.ssl_status];
+              const dns = DNS_STATUS_META[d.dns_status];
               return (
                 <div
                   key={d.id}
-                  className="grid grid-cols-1 gap-2 px-5 py-4 sm:grid-cols-[1fr_140px_120px_120px] sm:items-center sm:gap-4"
+                  className="grid grid-cols-1 gap-2 px-5 py-4 sm:grid-cols-[1fr_130px_110px_110px_90px] sm:items-center sm:gap-4"
                 >
                   <div className="flex items-center gap-2">
                     <Globe className="h-4 w-4 shrink-0 text-primary" />
@@ -75,16 +79,34 @@ function DomainsPage() {
                   >
                     {projectName(d.project_id)}
                   </Link>
-                  <StatusBadge tone={meta.tone} label={meta.label} />
-                  <span className="text-xs text-muted-foreground sm:text-right">
-                    {format(new Date(d.created_at), "MMM d, yyyy")}
-                  </span>
+                  <StatusBadge tone={dns.tone} label={dns.label} pulse={d.dns_status === "active"} />
+                  <StatusBadge tone={ssl.tone} label={ssl.label} pulse={d.ssl_status === "active"} />
+                  <div className="sm:text-right">
+                    <button
+                      onClick={() =>
+                        refresh.mutate(d.id, {
+                          onSuccess: () => toast.success("DNS re-checked & SSL renewed"),
+                          onError: () => toast.error("Refresh failed"),
+                        })
+                      }
+                      disabled={refresh.isPending}
+                      className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+                      aria-label="Renew SSL"
+                    >
+                      {refresh.isPending ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <RefreshCw className="h-3.5 w-3.5" />
+                      )}
+                    </button>
+                  </div>
                 </div>
               );
             })}
           </div>
         </div>
       )}
+
 
       <div className="mt-6 flex items-start gap-3 rounded-2xl border border-border bg-card/40 p-5">
         <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
