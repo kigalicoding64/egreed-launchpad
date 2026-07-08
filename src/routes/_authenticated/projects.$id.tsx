@@ -430,15 +430,42 @@ function EnvTab({ projectId }: { projectId: string }) {
 /* ---------- Domain ---------- */
 function DomainTab({ projectId }: { projectId: string }) {
   const { data: domains, isLoading } = useDomains(projectId);
+  const provision = useProvisionDomain();
+  const refresh = useRefreshDomain();
   if (isLoading) return <Skeleton className="h-32 rounded-2xl" />;
 
   return (
     <div className="space-y-3">
+      <div className="flex items-center justify-between rounded-2xl border border-border bg-card/40 p-4">
+        <p className="text-sm text-muted-foreground">
+          DNS records are created on Cloudflare and SSL is provisioned automatically.
+        </p>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() =>
+            provision.mutate(projectId, {
+              onSuccess: () => toast.success("DNS + SSL provisioning triggered"),
+              onError: () => toast.error("Provisioning failed"),
+            })
+          }
+          disabled={provision.isPending}
+        >
+          {provision.isPending ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <RefreshCw className="h-4 w-4" />
+          )}
+          Provision DNS + SSL
+        </Button>
+      </div>
+
       {(domains ?? []).map((d) => {
-        const meta = SSL_STATUS_META[d.ssl_status];
+        const ssl = SSL_STATUS_META[d.ssl_status];
+        const dns = DNS_STATUS_META[d.dns_status];
         return (
           <div key={d.id} className="rounded-2xl border border-border bg-card p-5">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <a
                 href={`https://${d.full_domain}`}
                 target="_blank"
@@ -449,13 +476,14 @@ function DomainTab({ projectId }: { projectId: string }) {
               </a>
               <div className="flex items-center gap-2">
                 {d.is_primary && <StatusBadge tone="info" label="Primary" />}
-                <StatusBadge tone={meta.tone} label={`SSL ${meta.label}`} />
+                <StatusBadge tone={dns.tone} label={`DNS ${dns.label}`} pulse={d.dns_status === "active"} />
+                <StatusBadge tone={ssl.tone} label={`SSL ${ssl.label}`} pulse={d.ssl_status === "active"} />
               </div>
             </div>
             <div className="mt-4 grid gap-3 rounded-xl bg-background/50 p-4 font-mono text-xs text-muted-foreground sm:grid-cols-3">
               <div>
                 <p className="text-foreground/60">Type</p>
-                <p className="text-foreground">CNAME</p>
+                <p className="text-foreground">{d.dns_type || "CNAME"}</p>
               </div>
               <div>
                 <p className="text-foreground/60">Name</p>
@@ -463,18 +491,42 @@ function DomainTab({ projectId }: { projectId: string }) {
               </div>
               <div>
                 <p className="text-foreground/60">Target</p>
-                <p className="text-foreground">deploy.egreedtech.org</p>
+                <p className="text-foreground">{d.dns_target ?? DNS_TARGET}</p>
               </div>
             </div>
-            <button
-              onClick={() => {
-                navigator.clipboard?.writeText(d.full_domain);
-                toast.success("Domain copied");
-              }}
-              className="mt-3 inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
-            >
-              <Copy className="h-3 w-3" /> Copy domain
-            </button>
+            {(d.ssl_provisioned_at || d.ssl_expires_at) && (
+              <p className="mt-3 text-xs text-muted-foreground">
+                {d.ssl_provisioned_at
+                  ? `SSL issued ${format(new Date(d.ssl_provisioned_at), "MMM d, yyyy")}`
+                  : ""}
+                {d.ssl_expires_at
+                  ? ` · renews ${format(new Date(d.ssl_expires_at), "MMM d, yyyy")}`
+                  : ""}
+              </p>
+            )}
+            <div className="mt-3 flex items-center gap-4">
+              <button
+                onClick={() => {
+                  navigator.clipboard?.writeText(d.full_domain);
+                  toast.success("Domain copied");
+                }}
+                className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
+              >
+                <Copy className="h-3 w-3" /> Copy domain
+              </button>
+              <button
+                onClick={() =>
+                  refresh.mutate(d.id, {
+                    onSuccess: () => toast.success("DNS re-checked & SSL renewed"),
+                    onError: () => toast.error("Refresh failed"),
+                  })
+                }
+                disabled={refresh.isPending}
+                className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+              >
+                <RefreshCw className="h-3 w-3" /> Re-check DNS & renew SSL
+              </button>
+            </div>
           </div>
         );
       })}
@@ -482,6 +534,7 @@ function DomainTab({ projectId }: { projectId: string }) {
     </div>
   );
 }
+
 
 /* ---------- Settings ---------- */
 function SettingsTab({
