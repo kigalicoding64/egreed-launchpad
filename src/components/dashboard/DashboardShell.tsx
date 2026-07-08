@@ -37,6 +37,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
   const qc = useQueryClient();
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  useRealtimeSync();
 
   async function handleSignOut() {
     await qc.cancelQueries();
