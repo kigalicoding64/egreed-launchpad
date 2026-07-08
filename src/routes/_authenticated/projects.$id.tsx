@@ -48,11 +48,15 @@ import {
   useUpdateProject,
   useAddEnvVar,
   useDeleteEnvVar,
+  useProvisionDomain,
+  useRefreshDomain,
 } from "@/lib/queries";
 import {
   PROJECT_STATUS_META,
   DEPLOY_STATUS_META,
   SSL_STATUS_META,
+  DNS_STATUS_META,
+  DNS_TARGET,
   frameworkMeta,
   buildLogsFor,
   type EnvTarget,
