@@ -20,7 +20,7 @@ import {
   AvatarImage,
 } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
-import { useProfile } from "@/lib/queries";
+import { useProfile, useRealtimeSync } from "@/lib/queries";
 import { cn } from "@/lib/utils";
 
 const NAV = [
