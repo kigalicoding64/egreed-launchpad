@@ -250,34 +250,72 @@ export function useDeployments(projectId?: string) {
 
 export function useRedeploy() {
   const qc = useQueryClient();
+  const trigger = useServerFn(triggerDeployment);
   return useMutation({
-    mutationFn: async (project: Project) => {
-      const user_id = await currentUserId();
-      const { data, error } = await db
-        .from("deployments")
-        .insert({
-          user_id,
-          project_id: project.id,
-          commit_hash: Math.random().toString(16).slice(2, 9),
-          commit_message: "Redeploy from dashboard",
+    mutationFn: async (project: Project) =>
+      trigger({
+        data: {
+          projectId: project.id,
+          commitMessage: "Redeploy from dashboard",
           branch: project.branch,
-          status: "online",
-          triggered_by: "manual",
-          build_logs: buildLogsFor(project),
-          finished_at: new Date().toISOString(),
-        })
-        .select()
-        .single();
-      if (error) throw error;
-      await db.from("projects").update({ status: "online" }).eq("id", project.id);
-      return data as Deployment;
-    },
+        },
+      }),
     onSuccess: (_d, project) => {
       qc.invalidateQueries({ queryKey: ["deployments"] });
       qc.invalidateQueries({ queryKey: ["projects"] });
       qc.invalidateQueries({ queryKey: ["project", project.id] });
+      qc.invalidateQueries({ queryKey: ["domains"] });
     },
   });
+}
+
+/** Trigger a brand-new deployment job for a project. */
+export function useTriggerDeployment() {
+  const qc = useQueryClient();
+  const trigger = useServerFn(triggerDeployment);
+  return useMutation({
+    mutationFn: async (input: { projectId: string; commitMessage?: string; branch?: string }) =>
+      trigger({ data: input }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["deployments"] });
+      qc.invalidateQueries({ queryKey: ["projects"] });
+      qc.invalidateQueries({ queryKey: ["domains"] });
+    },
+  });
+}
+
+/**
+ * Subscribe to realtime changes and keep React Query caches fresh, so
+ * deployment/domain status updates stream into the UI without polling.
+ */
+export function useRealtimeSync() {
+  const qc = useQueryClient();
+  useEffect(() => {
+    const channel = supabase
+      .channel("egreed-live")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "deployments" },
+        () => {
+          qc.invalidateQueries({ queryKey: ["deployments"] });
+          qc.invalidateQueries({ queryKey: ["projects"] });
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "domains" },
+        () => qc.invalidateQueries({ queryKey: ["domains"] }),
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "projects" },
+        () => qc.invalidateQueries({ queryKey: ["projects"] }),
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [qc]);
 }
 
 /* ---------------- Domains ---------------- */
