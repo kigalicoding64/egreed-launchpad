@@ -247,23 +247,40 @@ function DeploymentsTab({ projectId }: { projectId: string }) {
     <div className="overflow-hidden rounded-2xl border border-border bg-card divide-y divide-border">
       {(deployments ?? []).map((d) => {
         const meta = DEPLOY_STATUS_META[d.status];
+        const inProgress = d.status === "building" || d.status === "deploying";
         return (
-          <div key={d.id} className="flex items-center gap-4 px-5 py-4">
-            <StatusBadge tone={meta.tone} label={meta.label} pulse={d.status === "online"} />
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-foreground">
-                {d.commit_message ?? "Deployment"}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {d.triggered_by} · {d.branch}
-              </p>
+          <div key={d.id} className="px-5 py-4">
+            <div className="flex items-center gap-4">
+              <StatusBadge tone={meta.tone} label={meta.label} pulse={d.status === "online"} />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium text-foreground">
+                  {d.commit_message ?? "Deployment"}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {d.triggered_by} · {d.branch}
+                  {d.github_event ? ` · ${d.github_event}` : ""}
+                </p>
+              </div>
+              <span className="font-mono text-xs text-muted-foreground">
+                {d.commit_hash?.slice(0, 7)}
+              </span>
+              <span className="hidden w-28 text-right text-xs text-muted-foreground sm:block">
+                {formatDistanceToNow(new Date(d.created_at), { addSuffix: true })}
+              </span>
             </div>
-            <span className="font-mono text-xs text-muted-foreground">
-              {d.commit_hash?.slice(0, 7)}
-            </span>
-            <span className="hidden w-28 text-right text-xs text-muted-foreground sm:block">
-              {formatDistanceToNow(new Date(d.created_at), { addSuffix: true })}
-            </span>
+            {inProgress && (
+              <div className="mt-3 flex items-center gap-3">
+                <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-secondary">
+                  <div
+                    className="h-full rounded-full bg-primary transition-all duration-500"
+                    style={{ width: `${d.progress ?? 0}%` }}
+                  />
+                </div>
+                <span className="w-10 text-right font-mono text-xs text-muted-foreground">
+                  {d.progress ?? 0}%
+                </span>
+              </div>
+            )}
           </div>
         );
       })}
