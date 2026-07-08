@@ -333,6 +333,26 @@ export function useDomains(projectId?: string) {
   });
 }
 
+/** Provision (or re-provision) DNS + SSL for a project's primary domain. */
+export function useProvisionDomain() {
+  const qc = useQueryClient();
+  const fn = useServerFn(provisionDomain);
+  return useMutation({
+    mutationFn: async (projectId: string) => fn({ data: { projectId } }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["domains"] }),
+  });
+}
+
+/** Re-check DNS and renew SSL for a single domain. */
+export function useRefreshDomain() {
+  const qc = useQueryClient();
+  const fn = useServerFn(refreshDomain);
+  return useMutation({
+    mutationFn: async (domainId: string) => fn({ data: { domainId } }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["domains"] }),
+  });
+}
+
 /* ---------------- Env vars ---------------- */
 
 export function useEnvVars(projectId: string) {
