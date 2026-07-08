@@ -1,10 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Globe, ExternalLink, ShieldCheck } from "lucide-react";
+import { Globe, ExternalLink, ShieldCheck, RefreshCw, Loader2 } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/DashboardShell";
 import { StatusBadge } from "@/components/brand/StatusBadge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useDomains, useProjects } from "@/lib/queries";
-import { SSL_STATUS_META, ROOT_DOMAIN } from "@/lib/egreed";
+import { toast } from "sonner";
+import { useDomains, useProjects, useRefreshDomain } from "@/lib/queries";
+import { SSL_STATUS_META, DNS_STATUS_META, ROOT_DOMAIN } from "@/lib/egreed";
 import { format } from "date-fns";
 
 export const Route = createFileRoute("/_authenticated/domains")({
