@@ -10,8 +10,9 @@ export interface CloudflareConfig {
 }
 
 export function getCloudflareConfig(): CloudflareConfig | null {
-  const token = process.env.CLOUDFLARE_API_TOKEN;
-  const zoneId = process.env.CLOUDFLARE_ZONE_ID;
+  // Accept multiple casings since secret names are case-sensitive.
+  const token = process.env.CLOUDFLARE_API_TOKEN ?? process.env.CLOUDFLARE_API_Token;
+  const zoneId = process.env.CLOUDFLARE_ZONE_ID ?? process.env.cloudflare_zone_id;
   if (!token || !zoneId) return null;
   return { token, zoneId };
 }
