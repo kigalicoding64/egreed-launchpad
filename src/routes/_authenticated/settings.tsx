@@ -27,7 +27,7 @@ export const Route = createFileRoute("/_authenticated/settings")({
 
 function SettingsPage() {
   const { data: profile, isLoading } = useProfile();
-  const { data: gh } = useGithubConnection();
+  const { data: connections } = useGithubConnections();
   const connect = useConnectGithub();
   const disconnect = useDisconnectGithub();
   const [ghUser, setGhUser] = useState("");
