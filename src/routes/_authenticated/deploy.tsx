@@ -49,7 +49,7 @@ function DeployWizard() {
   const navigate = useNavigate();
   const { data: gh, isLoading } = useGithubConnection();
   const connect = useConnectGithub();
-  const create = useCreateProject();
+  const deploy = useDeployProject();
 
   const [step, setStep] = useState<Step>(0);
   const [ghUser, setGhUser] = useState("");
