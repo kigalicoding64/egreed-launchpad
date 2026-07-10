@@ -78,68 +78,85 @@ function SettingsPage() {
                 </p>
               </div>
             </div>
-            {gh && <StatusBadge tone="success" label="Connected" />}
+            {connections && connections.length > 0 && (
+              <StatusBadge tone="success" label={`${connections.length} connected`} />
+            )}
           </div>
 
-          {gh ? (
-            <div className="mt-5 flex items-center justify-between rounded-xl border border-border bg-secondary/30 p-4">
-              <div className="flex items-center gap-3">
-                <Avatar className="h-9 w-9">
-                  <AvatarImage src={gh.avatar_url ?? undefined} />
-                  <AvatarFallback>{gh.github_username.slice(0, 2).toUpperCase()}</AvatarFallback>
-                </Avatar>
-                <div>
-                  <p className="text-sm font-medium text-foreground">@{gh.github_username}</p>
-                  <p className="text-xs text-muted-foreground">
-                    Connected {format(new Date(gh.connected_at), "PPP")}
-                  </p>
+          {connections && connections.length > 0 && (
+            <div className="mt-5 space-y-2">
+              {connections.map((gh) => (
+                <div
+                  key={gh.id}
+                  className="flex items-center justify-between rounded-xl border border-border bg-secondary/30 p-4"
+                >
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-9 w-9">
+                      <AvatarImage src={gh.avatar_url ?? undefined} />
+                      <AvatarFallback>
+                        {gh.github_username.slice(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">@{gh.github_username}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Connected {format(new Date(gh.connected_at), "PPP")}
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      disconnect.mutate(gh.id, {
+                        onSuccess: () => toast.success("GitHub account disconnected"),
+                      })
+                    }
+                    disabled={disconnect.isPending}
+                  >
+                    <Unplug className="h-4 w-4" /> Disconnect
+                  </Button>
                 </div>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() =>
-                  disconnect.mutate(gh.id, {
-                    onSuccess: () => toast.success("GitHub disconnected"),
-                  })
-                }
-                disabled={disconnect.isPending}
-              >
-                <Unplug className="h-4 w-4" /> Disconnect
-              </Button>
-            </div>
-          ) : (
-            <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-end">
-              <div className="flex-1 space-y-1.5">
-                <Label htmlFor="gh">GitHub username or organization</Label>
-                <Input
-                  id="gh"
-                  value={ghUser}
-                  onChange={(e) => setGhUser(e.target.value)}
-                  placeholder="egreed-labs"
-                />
-              </div>
-              <Button
-                variant="hero"
-                onClick={() =>
-                  connect.mutate(ghUser.trim(), {
-                    onSuccess: () => {
-                      setGhUser("");
-                      toast.success("GitHub connected");
-                    },
-                  })
-                }
-                disabled={connect.isPending || !ghUser.trim()}
-              >
-                {connect.isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Github className="h-4 w-4" />
-                )}
-                Connect
-              </Button>
+              ))}
             </div>
           )}
+
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end">
+            <div className="flex-1 space-y-1.5">
+              <Label htmlFor="gh">
+                {connections && connections.length > 0
+                  ? "Add another GitHub account or organization"
+                  : "GitHub username or organization"}
+              </Label>
+              <Input
+                id="gh"
+                value={ghUser}
+                onChange={(e) => setGhUser(e.target.value)}
+                placeholder="egreed-labs"
+              />
+            </div>
+            <Button
+              variant="hero"
+              onClick={() =>
+                connect.mutate(ghUser.trim(), {
+                  onSuccess: () => {
+                    setGhUser("");
+                    toast.success("GitHub account connected");
+                  },
+                  onError: (e) =>
+                    toast.error(e instanceof Error ? e.message : "Could not connect"),
+                })
+              }
+              disabled={connect.isPending || !ghUser.trim()}
+            >
+              {connect.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Github className="h-4 w-4" />
+              )}
+              {connections && connections.length > 0 ? "Add account" : "Connect"}
+            </Button>
+          </div>
         </section>
 
         {/* Security */}
