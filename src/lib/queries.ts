@@ -48,7 +48,7 @@ export function useProfile() {
   });
 }
 
-/* ---------------- GitHub connection ---------------- */
+/* ---------------- GitHub connections (multiple accounts) ---------------- */
 
 export function useGithubConnection() {
   return useQuery({
@@ -66,18 +66,44 @@ export function useGithubConnection() {
   });
 }
 
+/** All connected GitHub accounts for the user (no cap — connect as many as needed). */
+export function useGithubConnections() {
+  return useQuery({
+    queryKey: ["github-connections"],
+    queryFn: async (): Promise<GithubConnection[]> => {
+      const { data, error } = await db
+        .from("github_connections")
+        .select("*")
+        .order("connected_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as GithubConnection[];
+    },
+  });
+}
+
 export function useConnectGithub() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (username: string) => {
       const user_id = await currentUserId();
+      const clean = username.replace(/^@+/, "").trim();
+
+      // Prevent duplicate accounts, but allow any number of distinct accounts.
+      const { data: existing } = await db
+        .from("github_connections")
+        .select("id")
+        .eq("user_id", user_id)
+        .ilike("github_username", clean)
+        .maybeSingle();
+      if (existing) throw new Error(`@${clean} is already connected`);
+
       const { data, error } = await db
         .from("github_connections")
         .insert({
           user_id,
-          github_username: username,
+          github_username: clean,
           github_user_id: String(Math.floor(Math.random() * 9_000_000) + 1_000_000),
-          avatar_url: `https://avatars.githubusercontent.com/${username}`,
+          avatar_url: `https://avatars.githubusercontent.com/${clean}`,
           account_type: "user",
           installation_id: String(Math.floor(Math.random() * 90_000_000) + 10_000_000),
         })
@@ -86,7 +112,10 @@ export function useConnectGithub() {
       if (error) throw error;
       return data as GithubConnection;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["github-connection"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["github-connection"] });
+      qc.invalidateQueries({ queryKey: ["github-connections"] });
+    },
   });
 }
 
@@ -97,7 +126,10 @@ export function useDisconnectGithub() {
       const { error } = await db.from("github_connections").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["github-connection"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["github-connection"] });
+      qc.invalidateQueries({ queryKey: ["github-connections"] });
+    },
   });
 }
 
