@@ -27,7 +27,7 @@ import { toast } from "sonner";
 import {
   useGithubConnection,
   useConnectGithub,
-  useCreateProject,
+  useDeployProject,
 } from "@/lib/queries";
 import {
   SAMPLE_REPOS,
