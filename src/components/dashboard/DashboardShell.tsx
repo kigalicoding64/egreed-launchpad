@@ -4,6 +4,7 @@ import {
   Boxes,
   Rocket,
   Globe,
+  ShieldCheck,
   Settings,
   LogOut,
   Plus,
