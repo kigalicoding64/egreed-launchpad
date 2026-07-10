@@ -86,7 +86,7 @@ function DeployWizard() {
   async function handleDeploy() {
     if (!repo) return;
     try {
-      const project = await create.mutateAsync({
+      const { project, domainProvisioned } = await deploy.mutateAsync({
         name,
         repository_name: repo.fullName,
         repository_url: `https://github.com/${repo.fullName}`,
@@ -94,7 +94,13 @@ function DeployWizard() {
         branch,
         build_command: buildCmd,
       });
-      toast.success(`Deployed to ${project.domain}`);
+      if (domainProvisioned) {
+        toast.success(`Deployed — ${project.domain} is provisioning DNS + SSL`);
+      } else {
+        toast.success(`Deployed to ${project.domain}`, {
+          description: "Domain queued — track DNS + SSL on the Certificates page.",
+        });
+      }
       navigate({ to: "/projects/$id", params: { id: project.id } });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Deployment failed");
