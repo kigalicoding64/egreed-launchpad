@@ -25,7 +25,6 @@ import { Route as AuthenticatedProjectsIndexRouteImport } from './routes/_authen
 import { Route as AuthenticatedProjectsIdRouteImport } from './routes/_authenticated/projects.$id'
 import { Route as ApiPublicWebhooksGithubRouteImport } from './routes/api/public/webhooks/github'
 import { Route as ApiPublicHooksSslRenewRouteImport } from './routes/api/public/hooks/ssl-renew'
-import { Route as ApiPublicHooksCfDiagRouteImport } from './routes/api/public/hooks/cf-diag'
 
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
@@ -108,11 +107,6 @@ const ApiPublicHooksSslRenewRoute = ApiPublicHooksSslRenewRouteImport.update({
   path: '/api/public/hooks/ssl-renew',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiPublicHooksCfDiagRoute = ApiPublicHooksCfDiagRouteImport.update({
-  id: '/api/public/hooks/cf-diag',
-  path: '/api/public/hooks/cf-diag',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -128,7 +122,6 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AuthenticatedSettingsRoute
   '/projects/$id': typeof AuthenticatedProjectsIdRoute
   '/projects/': typeof AuthenticatedProjectsIndexRoute
-  '/api/public/hooks/cf-diag': typeof ApiPublicHooksCfDiagRoute
   '/api/public/hooks/ssl-renew': typeof ApiPublicHooksSslRenewRoute
   '/api/public/webhooks/github': typeof ApiPublicWebhooksGithubRoute
 }
@@ -146,7 +139,6 @@ export interface FileRoutesByTo {
   '/settings': typeof AuthenticatedSettingsRoute
   '/projects/$id': typeof AuthenticatedProjectsIdRoute
   '/projects': typeof AuthenticatedProjectsIndexRoute
-  '/api/public/hooks/cf-diag': typeof ApiPublicHooksCfDiagRoute
   '/api/public/hooks/ssl-renew': typeof ApiPublicHooksSslRenewRoute
   '/api/public/webhooks/github': typeof ApiPublicWebhooksGithubRoute
 }
@@ -166,7 +158,6 @@ export interface FileRoutesById {
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/projects/$id': typeof AuthenticatedProjectsIdRoute
   '/_authenticated/projects/': typeof AuthenticatedProjectsIndexRoute
-  '/api/public/hooks/cf-diag': typeof ApiPublicHooksCfDiagRoute
   '/api/public/hooks/ssl-renew': typeof ApiPublicHooksSslRenewRoute
   '/api/public/webhooks/github': typeof ApiPublicWebhooksGithubRoute
 }
@@ -186,7 +177,6 @@ export interface FileRouteTypes {
     | '/settings'
     | '/projects/$id'
     | '/projects/'
-    | '/api/public/hooks/cf-diag'
     | '/api/public/hooks/ssl-renew'
     | '/api/public/webhooks/github'
   fileRoutesByTo: FileRoutesByTo
@@ -204,7 +194,6 @@ export interface FileRouteTypes {
     | '/settings'
     | '/projects/$id'
     | '/projects'
-    | '/api/public/hooks/cf-diag'
     | '/api/public/hooks/ssl-renew'
     | '/api/public/webhooks/github'
   id:
@@ -223,7 +212,6 @@ export interface FileRouteTypes {
     | '/_authenticated/settings'
     | '/_authenticated/projects/$id'
     | '/_authenticated/projects/'
-    | '/api/public/hooks/cf-diag'
     | '/api/public/hooks/ssl-renew'
     | '/api/public/webhooks/github'
   fileRoutesById: FileRoutesById
@@ -236,7 +224,6 @@ export interface RootRouteChildren {
   FeaturesRoute: typeof FeaturesRoute
   PricingRoute: typeof PricingRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
-  ApiPublicHooksCfDiagRoute: typeof ApiPublicHooksCfDiagRoute
   ApiPublicHooksSslRenewRoute: typeof ApiPublicHooksSslRenewRoute
   ApiPublicWebhooksGithubRoute: typeof ApiPublicWebhooksGithubRoute
 }
@@ -355,13 +342,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksSslRenewRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/hooks/cf-diag': {
-      id: '/api/public/hooks/cf-diag'
-      path: '/api/public/hooks/cf-diag'
-      fullPath: '/api/public/hooks/cf-diag'
-      preLoaderRoute: typeof ApiPublicHooksCfDiagRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
@@ -396,7 +376,6 @@ const rootRouteChildren: RootRouteChildren = {
   FeaturesRoute: FeaturesRoute,
   PricingRoute: PricingRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
-  ApiPublicHooksCfDiagRoute: ApiPublicHooksCfDiagRoute,
   ApiPublicHooksSslRenewRoute: ApiPublicHooksSslRenewRoute,
   ApiPublicWebhooksGithubRoute: ApiPublicWebhooksGithubRoute,
 }
