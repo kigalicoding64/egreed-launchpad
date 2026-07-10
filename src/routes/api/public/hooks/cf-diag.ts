@@ -26,11 +26,24 @@ export const Route = createFileRoute("/api/public/hooks/cf-diag")({
           .then((r) => r.json())
           .catch((e) => ({ success: false, errors: [String(e)] }));
 
+        const zone = await fetch(`${CF}/zones/${cfg.zoneId}`, { headers: auth })
+          .then((r) => r.json())
+          .catch((e) => ({ success: false, errors: [String(e)] }));
+
+        const zones = await fetch(`${CF}/zones?per_page=50`, { headers: auth })
+          .then((r) => r.json())
+          .catch((e) => ({ success: false, errors: [String(e)] }));
+
         return Response.json({
           configured: true,
           tokenPrefix: cfg.token.slice(0, 4),
+          configuredZoneId: cfg.zoneId,
           verify: { success: verify.success, status: verify.result?.status, errors: verify.errors },
           dns: { success: dns.success, errors: dns.errors },
+          zone: { success: zone.success, name: zone.result?.name, errors: zone.errors },
+          accessibleZones: Array.isArray(zones.result)
+            ? zones.result.map((z: { id: string; name: string }) => ({ id: z.id, name: z.name }))
+            : { success: zones.success, errors: zones.errors },
         });
       },
     },
