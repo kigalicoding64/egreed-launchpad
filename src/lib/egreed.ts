@@ -220,6 +220,76 @@ export const DNS_STATUS_META: Record<DnsStatus, { label: string; tone: Tone }> =
   failed: { label: "Failed", tone: "danger" },
 };
 
+/* ---------- SSL certificate issuance progress ---------- */
+
+export interface SslProgress {
+  /** 0–100 completion of the certificate issuance workflow. */
+  percent: number;
+  /** Short human-readable stage label. */
+  stage: string;
+  tone: Tone;
+  /** True when the workflow has stopped with an error. */
+  error: boolean;
+  /** Longer explanation / error detail for the UI. */
+  detail: string;
+}
+
+/**
+ * Derive certificate issuance progress from a domain's DNS + SSL status.
+ * Issuance is gated on DNS: a cert can only be signed once the record resolves.
+ */
+export function sslProgress(domain: {
+  dns_status: DnsStatus;
+  ssl_status: SslStatus;
+  full_domain: string;
+}): SslProgress {
+  if (domain.ssl_status === "failed") {
+    return {
+      percent: 100,
+      stage: "Issuance failed",
+      tone: "danger",
+      error: true,
+      detail: "The certificate authority rejected the request. Retry provisioning to try again.",
+    };
+  }
+  if (domain.dns_status === "failed") {
+    return {
+      percent: 40,
+      stage: "DNS error",
+      tone: "danger",
+      error: true,
+      detail: `DNS record for ${domain.full_domain} could not be created or resolved. Certificate issuance is blocked until DNS is fixed.`,
+    };
+  }
+  if (domain.ssl_status === "active") {
+    return {
+      percent: 100,
+      stage: "Certificate issued",
+      tone: "success",
+      error: false,
+      detail: "HTTPS is live and the certificate auto-renews before expiry.",
+    };
+  }
+  // ssl pending
+  if (domain.dns_status === "active") {
+    return {
+      percent: 70,
+      stage: "Issuing certificate",
+      tone: "warning",
+      error: false,
+      detail: "DNS resolved — requesting and validating the TLS certificate.",
+    };
+  }
+  return {
+    percent: 30,
+    stage: "Awaiting DNS propagation",
+    tone: "info",
+    error: false,
+    detail: "Waiting for the CNAME record to propagate before requesting a certificate.",
+  };
+}
+
+
 /* ---------- Deployment job phases (state machine) ---------- */
 
 export interface DeployPhase {

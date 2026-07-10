@@ -13,6 +13,7 @@ import {
   subdomainFor,
   slugify,
   frameworkMeta,
+  DNS_TARGET,
   type Deployment,
   type Domain,
   type EnvVar,
@@ -48,7 +49,7 @@ export function useProfile() {
   });
 }
 
-/* ---------------- GitHub connection ---------------- */
+/* ---------------- GitHub connections (multiple accounts) ---------------- */
 
 export function useGithubConnection() {
   return useQuery({
@@ -66,18 +67,44 @@ export function useGithubConnection() {
   });
 }
 
+/** All connected GitHub accounts for the user (no cap — connect as many as needed). */
+export function useGithubConnections() {
+  return useQuery({
+    queryKey: ["github-connections"],
+    queryFn: async (): Promise<GithubConnection[]> => {
+      const { data, error } = await db
+        .from("github_connections")
+        .select("*")
+        .order("connected_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as GithubConnection[];
+    },
+  });
+}
+
 export function useConnectGithub() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (username: string) => {
       const user_id = await currentUserId();
+      const clean = username.replace(/^@+/, "").trim();
+
+      // Prevent duplicate accounts, but allow any number of distinct accounts.
+      const { data: existing } = await db
+        .from("github_connections")
+        .select("id")
+        .eq("user_id", user_id)
+        .ilike("github_username", clean)
+        .maybeSingle();
+      if (existing) throw new Error(`@${clean} is already connected`);
+
       const { data, error } = await db
         .from("github_connections")
         .insert({
           user_id,
-          github_username: username,
+          github_username: clean,
           github_user_id: String(Math.floor(Math.random() * 9_000_000) + 1_000_000),
-          avatar_url: `https://avatars.githubusercontent.com/${username}`,
+          avatar_url: `https://avatars.githubusercontent.com/${clean}`,
           account_type: "user",
           installation_id: String(Math.floor(Math.random() * 90_000_000) + 10_000_000),
         })
@@ -86,7 +113,10 @@ export function useConnectGithub() {
       if (error) throw error;
       return data as GithubConnection;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["github-connection"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["github-connection"] });
+      qc.invalidateQueries({ queryKey: ["github-connections"] });
+    },
   });
 }
 
@@ -97,7 +127,10 @@ export function useDisconnectGithub() {
       const { error } = await db.from("github_connections").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["github-connection"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["github-connection"] });
+      qc.invalidateQueries({ queryKey: ["github-connections"] });
+    },
   });
 }
 
@@ -165,13 +198,18 @@ export function useCreateProject() {
       if (error) throw error;
       const p = project as Project;
 
-      // Assign domain
+      // Assign the project's primary *.egreedtech.org subdomain in a pending
+      // state. The deploy flow then provisions the real Cloudflare CNAME and
+      // starts DNS propagation monitoring via the provisionDomain server fn.
       await db.from("domains").insert({
         user_id,
         project_id: p.id,
         subdomain: slugify(input.name) || "app",
         full_domain: domain,
-        ssl_status: "active",
+        ssl_status: "pending",
+        dns_status: "pending",
+        dns_type: "CNAME",
+        dns_target: DNS_TARGET,
         is_primary: true,
       });
 
@@ -189,6 +227,87 @@ export function useCreateProject() {
       });
 
       return p;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["projects"] });
+      qc.invalidateQueries({ queryKey: ["domains"] });
+      qc.invalidateQueries({ queryKey: ["deployments"] });
+    },
+  });
+}
+
+/**
+ * Full deploy flow: create the project, then provision its *.egreedtech.org
+ * domain (create the Cloudflare CNAME + start DNS propagation monitoring).
+ * Domain provisioning failures don't block the deploy — the domain simply
+ * stays in a pending/failed state and can be retried from the Domains/SSL page.
+ */
+export function useDeployProject() {
+  const qc = useQueryClient();
+  const provision = useServerFn(provisionDomain);
+  return useMutation({
+    mutationFn: async (
+      input: CreateProjectInput,
+    ): Promise<{ project: Project; domainProvisioned: boolean }> => {
+      const user_id = await currentUserId();
+      const domain = subdomainFor(input.name);
+      const fm = frameworkMeta(input.framework);
+
+      const { data: project, error } = await db
+        .from("projects")
+        .insert({
+          user_id,
+          name: input.name,
+          repository_name: input.repository_name,
+          repository_url: input.repository_url,
+          framework: input.framework,
+          build_command: input.build_command ?? fm.buildCommand,
+          branch: input.branch || "main",
+          status: "online",
+          domain,
+          auto_deploy: true,
+        })
+        .select()
+        .single();
+      if (error) throw error;
+      const p = project as Project;
+
+      // Primary subdomain, created in a pending state; provisioned below.
+      await db.from("domains").insert({
+        user_id,
+        project_id: p.id,
+        subdomain: slugify(input.name) || "app",
+        full_domain: domain,
+        ssl_status: "pending",
+        dns_status: "pending",
+        dns_type: "CNAME",
+        dns_target: DNS_TARGET,
+        is_primary: true,
+      });
+
+      // Initial deployment record.
+      await db.from("deployments").insert({
+        user_id,
+        project_id: p.id,
+        commit_hash: Math.random().toString(16).slice(2, 9),
+        commit_message: "Initial deployment",
+        branch: p.branch,
+        status: "online",
+        triggered_by: "manual",
+        build_logs: buildLogsFor(p),
+        finished_at: new Date().toISOString(),
+      });
+
+      // Domain provisioning step: create the CNAME + kick off DNS monitoring.
+      let domainProvisioned = false;
+      try {
+        await provision({ data: { projectId: p.id } });
+        domainProvisioned = true;
+      } catch (err) {
+        console.error("[deploy] domain provisioning failed", err);
+      }
+
+      return { project: p, domainProvisioned };
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["projects"] });

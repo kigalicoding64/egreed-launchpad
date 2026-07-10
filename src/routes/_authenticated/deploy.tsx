@@ -27,7 +27,7 @@ import { toast } from "sonner";
 import {
   useGithubConnection,
   useConnectGithub,
-  useCreateProject,
+  useDeployProject,
 } from "@/lib/queries";
 import {
   SAMPLE_REPOS,
@@ -49,7 +49,7 @@ function DeployWizard() {
   const navigate = useNavigate();
   const { data: gh, isLoading } = useGithubConnection();
   const connect = useConnectGithub();
-  const create = useCreateProject();
+  const deploy = useDeployProject();
 
   const [step, setStep] = useState<Step>(0);
   const [ghUser, setGhUser] = useState("");
@@ -86,7 +86,7 @@ function DeployWizard() {
   async function handleDeploy() {
     if (!repo) return;
     try {
-      const project = await create.mutateAsync({
+      const { project, domainProvisioned } = await deploy.mutateAsync({
         name,
         repository_name: repo.fullName,
         repository_url: `https://github.com/${repo.fullName}`,
@@ -94,7 +94,13 @@ function DeployWizard() {
         branch,
         build_command: buildCmd,
       });
-      toast.success(`Deployed to ${project.domain}`);
+      if (domainProvisioned) {
+        toast.success(`Deployed — ${project.domain} is provisioning DNS + SSL`);
+      } else {
+        toast.success(`Deployed to ${project.domain}`, {
+          description: "Domain queued — track DNS + SSL on the Certificates page.",
+        });
+      }
       navigate({ to: "/projects/$id", params: { id: project.id } });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Deployment failed");
@@ -283,14 +289,16 @@ function DeployWizard() {
 
             <div className="mt-6 flex items-center justify-between border-t border-border pt-5">
               <span className="text-xs text-muted-foreground">
-                Auto-deploy on push is enabled by default.
+                {deploy.isPending
+                  ? "Creating CNAME & starting DNS propagation monitoring…"
+                  : "Auto-deploy on push is enabled by default."}
               </span>
               <Button
                 variant="hero"
                 onClick={handleDeploy}
-                disabled={create.isPending || !name.trim() || !slugify(name)}
+                disabled={deploy.isPending || !name.trim() || !slugify(name)}
               >
-                {create.isPending ? (
+                {deploy.isPending ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   <Check className="h-4 w-4" />
