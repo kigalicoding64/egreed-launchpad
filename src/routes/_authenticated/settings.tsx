@@ -15,7 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import {
   useProfile,
-  useGithubConnection,
+  useGithubConnections,
   useConnectGithub,
   useDisconnectGithub,
 } from "@/lib/queries";
