@@ -236,6 +236,87 @@ export function useCreateProject() {
   });
 }
 
+/**
+ * Full deploy flow: create the project, then provision its *.egreedtech.org
+ * domain (create the Cloudflare CNAME + start DNS propagation monitoring).
+ * Domain provisioning failures don't block the deploy — the domain simply
+ * stays in a pending/failed state and can be retried from the Domains/SSL page.
+ */
+export function useDeployProject() {
+  const qc = useQueryClient();
+  const provision = useServerFn(provisionDomain);
+  return useMutation({
+    mutationFn: async (
+      input: CreateProjectInput,
+    ): Promise<{ project: Project; domainProvisioned: boolean }> => {
+      const user_id = await currentUserId();
+      const domain = subdomainFor(input.name);
+      const fm = frameworkMeta(input.framework);
+
+      const { data: project, error } = await db
+        .from("projects")
+        .insert({
+          user_id,
+          name: input.name,
+          repository_name: input.repository_name,
+          repository_url: input.repository_url,
+          framework: input.framework,
+          build_command: input.build_command ?? fm.buildCommand,
+          branch: input.branch || "main",
+          status: "online",
+          domain,
+          auto_deploy: true,
+        })
+        .select()
+        .single();
+      if (error) throw error;
+      const p = project as Project;
+
+      // Primary subdomain, created in a pending state; provisioned below.
+      await db.from("domains").insert({
+        user_id,
+        project_id: p.id,
+        subdomain: slugify(input.name) || "app",
+        full_domain: domain,
+        ssl_status: "pending",
+        dns_status: "pending",
+        dns_type: "CNAME",
+        dns_target: DNS_TARGET,
+        is_primary: true,
+      });
+
+      // Initial deployment record.
+      await db.from("deployments").insert({
+        user_id,
+        project_id: p.id,
+        commit_hash: Math.random().toString(16).slice(2, 9),
+        commit_message: "Initial deployment",
+        branch: p.branch,
+        status: "online",
+        triggered_by: "manual",
+        build_logs: buildLogsFor(p),
+        finished_at: new Date().toISOString(),
+      });
+
+      // Domain provisioning step: create the CNAME + kick off DNS monitoring.
+      let domainProvisioned = false;
+      try {
+        await provision({ data: { projectId: p.id } });
+        domainProvisioned = true;
+      } catch (err) {
+        console.error("[deploy] domain provisioning failed", err);
+      }
+
+      return { project: p, domainProvisioned };
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["projects"] });
+      qc.invalidateQueries({ queryKey: ["domains"] });
+      qc.invalidateQueries({ queryKey: ["deployments"] });
+    },
+  });
+}
+
 export function useUpdateProject() {
   const qc = useQueryClient();
   return useMutation({
