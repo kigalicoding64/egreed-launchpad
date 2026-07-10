@@ -16,6 +16,7 @@ import { Route as DocsRouteImport } from './routes/docs'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedSslRouteImport } from './routes/_authenticated/ssl'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedDomainsRouteImport } from './routes/_authenticated/domains'
 import { Route as AuthenticatedDeploymentsRouteImport } from './routes/_authenticated/deployments'
@@ -59,6 +60,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedSslRoute = AuthenticatedSslRouteImport.update({
+  id: '/ssl',
+  path: '/ssl',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
@@ -120,6 +126,7 @@ export interface FileRoutesByFullPath {
   '/deployments': typeof AuthenticatedDeploymentsRoute
   '/domains': typeof AuthenticatedDomainsRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/ssl': typeof AuthenticatedSslRoute
   '/projects/$id': typeof AuthenticatedProjectsIdRoute
   '/projects/': typeof AuthenticatedProjectsIndexRoute
   '/api/public/hooks/ssl-renew': typeof ApiPublicHooksSslRenewRoute
@@ -137,6 +144,7 @@ export interface FileRoutesByTo {
   '/deployments': typeof AuthenticatedDeploymentsRoute
   '/domains': typeof AuthenticatedDomainsRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/ssl': typeof AuthenticatedSslRoute
   '/projects/$id': typeof AuthenticatedProjectsIdRoute
   '/projects': typeof AuthenticatedProjectsIndexRoute
   '/api/public/hooks/ssl-renew': typeof ApiPublicHooksSslRenewRoute
@@ -156,6 +164,7 @@ export interface FileRoutesById {
   '/_authenticated/deployments': typeof AuthenticatedDeploymentsRoute
   '/_authenticated/domains': typeof AuthenticatedDomainsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/_authenticated/ssl': typeof AuthenticatedSslRoute
   '/_authenticated/projects/$id': typeof AuthenticatedProjectsIdRoute
   '/_authenticated/projects/': typeof AuthenticatedProjectsIndexRoute
   '/api/public/hooks/ssl-renew': typeof ApiPublicHooksSslRenewRoute
@@ -175,6 +184,7 @@ export interface FileRouteTypes {
     | '/deployments'
     | '/domains'
     | '/settings'
+    | '/ssl'
     | '/projects/$id'
     | '/projects/'
     | '/api/public/hooks/ssl-renew'
@@ -192,6 +202,7 @@ export interface FileRouteTypes {
     | '/deployments'
     | '/domains'
     | '/settings'
+    | '/ssl'
     | '/projects/$id'
     | '/projects'
     | '/api/public/hooks/ssl-renew'
@@ -210,6 +221,7 @@ export interface FileRouteTypes {
     | '/_authenticated/deployments'
     | '/_authenticated/domains'
     | '/_authenticated/settings'
+    | '/_authenticated/ssl'
     | '/_authenticated/projects/$id'
     | '/_authenticated/projects/'
     | '/api/public/hooks/ssl-renew'
@@ -278,6 +290,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/ssl': {
+      id: '/_authenticated/ssl'
+      path: '/ssl'
+      fullPath: '/ssl'
+      preLoaderRoute: typeof AuthenticatedSslRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/settings': {
       id: '/_authenticated/settings'
@@ -351,6 +370,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDeploymentsRoute: typeof AuthenticatedDeploymentsRoute
   AuthenticatedDomainsRoute: typeof AuthenticatedDomainsRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
+  AuthenticatedSslRoute: typeof AuthenticatedSslRoute
   AuthenticatedProjectsIdRoute: typeof AuthenticatedProjectsIdRoute
   AuthenticatedProjectsIndexRoute: typeof AuthenticatedProjectsIndexRoute
 }
@@ -361,6 +381,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDeploymentsRoute: AuthenticatedDeploymentsRoute,
   AuthenticatedDomainsRoute: AuthenticatedDomainsRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
+  AuthenticatedSslRoute: AuthenticatedSslRoute,
   AuthenticatedProjectsIdRoute: AuthenticatedProjectsIdRoute,
   AuthenticatedProjectsIndexRoute: AuthenticatedProjectsIndexRoute,
 }
