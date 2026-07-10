@@ -197,13 +197,18 @@ export function useCreateProject() {
       if (error) throw error;
       const p = project as Project;
 
-      // Assign domain
+      // Assign the project's primary *.egreedtech.org subdomain in a pending
+      // state. The deploy flow then provisions the real Cloudflare CNAME and
+      // starts DNS propagation monitoring via the provisionDomain server fn.
       await db.from("domains").insert({
         user_id,
         project_id: p.id,
         subdomain: slugify(input.name) || "app",
         full_domain: domain,
-        ssl_status: "active",
+        ssl_status: "pending",
+        dns_status: "pending",
+        dns_type: "CNAME",
+        dns_target: DNS_TARGET,
         is_primary: true,
       });
 
