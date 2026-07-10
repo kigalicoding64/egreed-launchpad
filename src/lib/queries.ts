@@ -13,6 +13,7 @@ import {
   subdomainFor,
   slugify,
   frameworkMeta,
+  DNS_TARGET,
   type Deployment,
   type Domain,
   type EnvVar,
