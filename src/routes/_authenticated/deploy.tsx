@@ -289,14 +289,16 @@ function DeployWizard() {
 
             <div className="mt-6 flex items-center justify-between border-t border-border pt-5">
               <span className="text-xs text-muted-foreground">
-                Auto-deploy on push is enabled by default.
+                {deploy.isPending
+                  ? "Creating CNAME & starting DNS propagation monitoring…"
+                  : "Auto-deploy on push is enabled by default."}
               </span>
               <Button
                 variant="hero"
                 onClick={handleDeploy}
-                disabled={create.isPending || !name.trim() || !slugify(name)}
+                disabled={deploy.isPending || !name.trim() || !slugify(name)}
               >
-                {create.isPending ? (
+                {deploy.isPending ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   <Check className="h-4 w-4" />
