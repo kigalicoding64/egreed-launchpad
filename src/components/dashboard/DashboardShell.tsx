@@ -29,6 +29,7 @@ const NAV = [
   { to: "/projects", label: "Projects", icon: Boxes, exact: false },
   { to: "/deployments", label: "Deployments", icon: Rocket, exact: false },
   { to: "/domains", label: "Domains", icon: Globe, exact: false },
+  { to: "/ssl", label: "Certificates", icon: ShieldCheck, exact: false },
   { to: "/settings", label: "Settings", icon: Settings, exact: false },
 ] as const;
 
