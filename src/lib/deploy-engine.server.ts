@@ -76,12 +76,15 @@ export async function provisionDnsAndSsl(db: DbClient, domain: DomainRow): Promi
         last_checked_at: now.toISOString(),
       })
       .eq("id", domain.id);
-    logs.push(`> Cloudflare not configured — ${domain.full_domain} queued for DNS + SSL`);
-    return logs;
+    throw new Error(
+      "Cloudflare is not configured (missing CLOUDFLARE_API_TOKEN / CLOUDFLARE_ZONE_ID). Domain queued for DNS + SSL.",
+    );
   }
 
-  const rec = await upsertCnameRecord(cfg, domain.full_domain, DNS_TARGET);
-  if (!rec) {
+  let rec: { recordId: string; proxied: boolean };
+  try {
+    rec = await upsertCnameRecord(cfg, domain.full_domain, DNS_TARGET);
+  } catch (err) {
     await db
       .from("domains")
       .update({
@@ -90,8 +93,7 @@ export async function provisionDnsAndSsl(db: DbClient, domain: DomainRow): Promi
         last_checked_at: now.toISOString(),
       })
       .eq("id", domain.id);
-    logs.push(`✗ DNS record creation failed for ${domain.full_domain}`);
-    return logs;
+    throw err instanceof Error ? err : new Error(String(err));
   }
 
   const expires = new Date(now.getTime() + SSL_VALIDITY_DAYS * 24 * 3600 * 1000);
@@ -202,20 +204,30 @@ export async function runDeploymentJob(db: DbClient, deploymentId: string): Prom
  */
 export async function renewDomainSsl(
   db: DbClient,
-  domain: DomainRow & { ssl_expires_at: string | null; cloudflare_record_id: string | null },
+  domain: DomainRow & {
+    ssl_expires_at: string | null;
+    cloudflare_record_id: string | null;
+    ssl_provisioned_at?: string | null;
+  },
 ): Promise<boolean> {
   const now = new Date();
   const cfg = getCloudflareConfig();
-  if (!cfg) return false;
+  if (!cfg) {
+    throw new Error(
+      "Cloudflare is not configured (missing CLOUDFLARE_API_TOKEN / CLOUDFLARE_ZONE_ID).",
+    );
+  }
 
   // Ensure the DNS record still exists (recreates if missing), then extend SSL.
-  const rec = await upsertCnameRecord(cfg, domain.full_domain, DNS_TARGET);
-  if (!rec) {
+  let rec: { recordId: string; proxied: boolean };
+  try {
+    rec = await upsertCnameRecord(cfg, domain.full_domain, DNS_TARGET);
+  } catch (err) {
     await db
       .from("domains")
       .update({ dns_status: "failed", last_checked_at: now.toISOString() })
       .eq("id", domain.id);
-    return false;
+    throw err instanceof Error ? err : new Error(String(err));
   }
 
   const expires = new Date(now.getTime() + SSL_VALIDITY_DAYS * 24 * 3600 * 1000);
@@ -223,8 +235,11 @@ export async function renewDomainSsl(
     .from("domains")
     .update({
       cloudflare_record_id: rec.recordId,
+      dns_target: DNS_TARGET,
       dns_status: "active",
       ssl_status: "active",
+      // Backfill provisioned timestamp for domains that were never fully provisioned.
+      ...(domain.ssl_provisioned_at ? {} : { ssl_provisioned_at: now.toISOString() }),
       ssl_renewed_at: now.toISOString(),
       ssl_expires_at: expires.toISOString(),
       last_checked_at: now.toISOString(),

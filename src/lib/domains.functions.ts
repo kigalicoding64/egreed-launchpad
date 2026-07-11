@@ -75,7 +75,9 @@ export const refreshDomain = createServerFn({ method: "POST" })
 
     const { data: domain, error } = await supabase
       .from("domains")
-      .select("id, full_domain, subdomain, user_id, ssl_expires_at, cloudflare_record_id")
+      .select(
+        "id, full_domain, subdomain, user_id, ssl_expires_at, cloudflare_record_id, ssl_provisioned_at",
+      )
       .eq("id", data.domainId)
       .maybeSingle();
     if (error) throw error;

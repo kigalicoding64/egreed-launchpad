@@ -29,6 +29,21 @@ interface CfRecord {
   proxied: boolean;
 }
 
+/** Human-readable summary of Cloudflare API errors for surfacing to the UI/logs. */
+function formatCfErrors(errors: unknown[]): string {
+  if (!errors || errors.length === 0) return "unknown Cloudflare error";
+  return errors
+    .map((e) => {
+      if (e && typeof e === "object") {
+        const o = e as { code?: number; message?: string; status?: number };
+        if (o.message) return o.code ? `${o.code}: ${o.message}` : o.message;
+        if (o.status) return `HTTP ${o.status}`;
+      }
+      return String(e);
+    })
+    .join("; ");
+}
+
 async function cf<T>(
   cfg: CloudflareConfig,
   path: string,
@@ -62,13 +77,16 @@ export async function upsertCnameRecord(
   cfg: CloudflareConfig,
   fullName: string,
   target: string,
-): Promise<{ recordId: string; proxied: boolean } | null> {
+): Promise<{ recordId: string; proxied: boolean }> {
   // Look for an existing record for this name.
   const existing = await cf<CfRecord[]>(
     cfg,
     `/zones/${cfg.zoneId}/dns_records?type=CNAME&name=${encodeURIComponent(fullName)}`,
     { method: "GET" },
   );
+  if (!existing.ok) {
+    throw new Error(`Cloudflare lookup failed for ${fullName} — ${formatCfErrors(existing.errors)}`);
+  }
 
   const payload = JSON.stringify({
     type: "CNAME",
@@ -78,13 +96,15 @@ export async function upsertCnameRecord(
     proxied: true,
   });
 
-  if (existing.ok && existing.result && existing.result.length > 0) {
+  if (existing.result && existing.result.length > 0) {
     const id = existing.result[0].id;
     const updated = await cf<CfRecord>(cfg, `/zones/${cfg.zoneId}/dns_records/${id}`, {
       method: "PUT",
       body: payload,
     });
-    if (!updated.ok || !updated.result) return null;
+    if (!updated.ok || !updated.result) {
+      throw new Error(`Cloudflare update failed for ${fullName} — ${formatCfErrors(updated.errors)}`);
+    }
     return { recordId: updated.result.id, proxied: updated.result.proxied };
   }
 
@@ -92,7 +112,9 @@ export async function upsertCnameRecord(
     method: "POST",
     body: payload,
   });
-  if (!created.ok || !created.result) return null;
+  if (!created.ok || !created.result) {
+    throw new Error(`Cloudflare create failed for ${fullName} — ${formatCfErrors(created.errors)}`);
+  }
   return { recordId: created.result.id, proxied: created.result.proxied };
 }
 

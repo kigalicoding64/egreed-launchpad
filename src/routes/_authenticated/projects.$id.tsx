@@ -133,7 +133,7 @@ function ProjectDetail() {
             onClick={() =>
               redeploy.mutate(project, {
                 onSuccess: () => toast.success("Redeploy triggered"),
-                onError: () => toast.error("Redeploy failed"),
+                onError: (e) => toast.error(e instanceof Error ? e.message : "Redeploy failed"),
               })
             }
             disabled={redeploy.isPending}
@@ -450,7 +450,7 @@ function DomainTab({ projectId }: { projectId: string }) {
           onClick={() =>
             provision.mutate(projectId, {
               onSuccess: () => toast.success("DNS + SSL provisioning triggered"),
-              onError: () => toast.error("Provisioning failed"),
+              onError: (e) => toast.error(e instanceof Error ? e.message : "Provisioning failed"),
             })
           }
           disabled={provision.isPending}
@@ -522,7 +522,8 @@ function DomainTab({ projectId }: { projectId: string }) {
                 onClick={() =>
                   refresh.mutate(d.id, {
                     onSuccess: () => toast.success("DNS re-checked & SSL renewed"),
-                    onError: () => toast.error("Refresh failed"),
+                    onError: (e) =>
+                      toast.error(e instanceof Error ? e.message : "Refresh failed"),
                   })
                 }
                 disabled={refresh.isPending}
