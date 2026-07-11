@@ -86,7 +86,8 @@ function DomainsPage() {
                       onClick={() =>
                         refresh.mutate(d.id, {
                           onSuccess: () => toast.success("DNS re-checked & SSL renewed"),
-                          onError: () => toast.error("Refresh failed"),
+                          onError: (e) =>
+                            toast.error(e instanceof Error ? e.message : "Refresh failed"),
                         })
                       }
                       disabled={refresh.isPending}

@@ -103,13 +103,14 @@ function SslStatusPage() {
               onRetry={() =>
                 provision.mutate(d.project_id, {
                   onSuccess: () => toast.success("Re-provisioning DNS & certificate"),
-                  onError: () => toast.error("Provisioning failed"),
+                  onError: (e) =>
+                    toast.error(e instanceof Error ? e.message : "Provisioning failed"),
                 })
               }
               onRenew={() =>
                 refresh.mutate(d.id, {
                   onSuccess: () => toast.success("Certificate re-checked & renewed"),
-                  onError: () => toast.error("Renewal failed"),
+                  onError: (e) => toast.error(e instanceof Error ? e.message : "Renewal failed"),
                 })
               }
               busy={refresh.isPending || provision.isPending}
