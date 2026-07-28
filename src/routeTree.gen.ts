@@ -16,6 +16,7 @@ import { Route as DocsRouteImport } from './routes/docs'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as HostedSubdomainRouteImport } from './routes/hosted.$subdomain'
 import { Route as AuthenticatedSslRouteImport } from './routes/_authenticated/ssl'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedDomainsRouteImport } from './routes/_authenticated/domains'
@@ -59,6 +60,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HostedSubdomainRoute = HostedSubdomainRouteImport.update({
+  id: '/hosted/$subdomain',
+  path: '/hosted/$subdomain',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedSslRoute = AuthenticatedSslRouteImport.update({
@@ -127,6 +133,7 @@ export interface FileRoutesByFullPath {
   '/domains': typeof AuthenticatedDomainsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/ssl': typeof AuthenticatedSslRoute
+  '/hosted/$subdomain': typeof HostedSubdomainRoute
   '/projects/$id': typeof AuthenticatedProjectsIdRoute
   '/projects/': typeof AuthenticatedProjectsIndexRoute
   '/api/public/hooks/ssl-renew': typeof ApiPublicHooksSslRenewRoute
@@ -145,6 +152,7 @@ export interface FileRoutesByTo {
   '/domains': typeof AuthenticatedDomainsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/ssl': typeof AuthenticatedSslRoute
+  '/hosted/$subdomain': typeof HostedSubdomainRoute
   '/projects/$id': typeof AuthenticatedProjectsIdRoute
   '/projects': typeof AuthenticatedProjectsIndexRoute
   '/api/public/hooks/ssl-renew': typeof ApiPublicHooksSslRenewRoute
@@ -165,6 +173,7 @@ export interface FileRoutesById {
   '/_authenticated/domains': typeof AuthenticatedDomainsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/ssl': typeof AuthenticatedSslRoute
+  '/hosted/$subdomain': typeof HostedSubdomainRoute
   '/_authenticated/projects/$id': typeof AuthenticatedProjectsIdRoute
   '/_authenticated/projects/': typeof AuthenticatedProjectsIndexRoute
   '/api/public/hooks/ssl-renew': typeof ApiPublicHooksSslRenewRoute
@@ -185,6 +194,7 @@ export interface FileRouteTypes {
     | '/domains'
     | '/settings'
     | '/ssl'
+    | '/hosted/$subdomain'
     | '/projects/$id'
     | '/projects/'
     | '/api/public/hooks/ssl-renew'
@@ -203,6 +213,7 @@ export interface FileRouteTypes {
     | '/domains'
     | '/settings'
     | '/ssl'
+    | '/hosted/$subdomain'
     | '/projects/$id'
     | '/projects'
     | '/api/public/hooks/ssl-renew'
@@ -222,6 +233,7 @@ export interface FileRouteTypes {
     | '/_authenticated/domains'
     | '/_authenticated/settings'
     | '/_authenticated/ssl'
+    | '/hosted/$subdomain'
     | '/_authenticated/projects/$id'
     | '/_authenticated/projects/'
     | '/api/public/hooks/ssl-renew'
@@ -236,6 +248,7 @@ export interface RootRouteChildren {
   FeaturesRoute: typeof FeaturesRoute
   PricingRoute: typeof PricingRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  HostedSubdomainRoute: typeof HostedSubdomainRoute
   ApiPublicHooksSslRenewRoute: typeof ApiPublicHooksSslRenewRoute
   ApiPublicWebhooksGithubRoute: typeof ApiPublicWebhooksGithubRoute
 }
@@ -289,6 +302,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/hosted/$subdomain': {
+      id: '/hosted/$subdomain'
+      path: '/hosted/$subdomain'
+      fullPath: '/hosted/$subdomain'
+      preLoaderRoute: typeof HostedSubdomainRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/ssl': {
@@ -397,6 +417,7 @@ const rootRouteChildren: RootRouteChildren = {
   FeaturesRoute: FeaturesRoute,
   PricingRoute: PricingRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  HostedSubdomainRoute: HostedSubdomainRoute,
   ApiPublicHooksSslRenewRoute: ApiPublicHooksSslRenewRoute,
   ApiPublicWebhooksGithubRoute: ApiPublicWebhooksGithubRoute,
 }
