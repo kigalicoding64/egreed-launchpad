@@ -88,3 +88,17 @@ export const refreshDomain = createServerFn({ method: "POST" })
     const ok = await renewDomainSsl(client, domain);
     return { ok };
   });
+
+/**
+ * Deploy / refresh the Cloudflare edge worker that makes every project
+ * subdomain (*.egreedtech.org) serve a real page instead of a 404.
+ */
+export const syncEdgeRouting = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async () => {
+    const origin =
+      process.env.EGREED_PLATFORM_ORIGIN ?? "https://deploy-spark-africa.lovable.app";
+    const { syncIngressWorker } = await import("@/lib/cf-worker.server");
+    const result = await syncIngressWorker(origin);
+    return { ok: true, logs: result.logs, pattern: result.pattern };
+  });
