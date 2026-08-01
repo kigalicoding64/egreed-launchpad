@@ -449,6 +449,82 @@ function EnvTab({ projectId }: { projectId: string }) {
   );
 }
 
+function EnvRow({
+  envVar: v,
+  projectId,
+  onRemove,
+}: {
+  envVar: { id: string; key: string; value: string; target: EnvTarget };
+  projectId: string;
+  onRemove: ReturnType<typeof useDeleteEnvVar>;
+}) {
+  const update = useUpdateEnvVar();
+  const [revealed, setRevealed] = useState(false);
+  const [draft, setDraft] = useState(v.value);
+  const dirty = draft !== v.value;
+
+  return (
+    <div className="flex flex-wrap items-center gap-3 px-5 py-3.5">
+      <span className="font-mono text-sm font-medium text-foreground">{v.key}</span>
+      {revealed ? (
+        <Input
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          className="h-8 flex-1 font-mono text-xs"
+        />
+      ) : (
+        <span className="flex-1 truncate font-mono text-xs text-muted-foreground">
+          {"•".repeat(Math.min(v.value.length, 16))}
+        </span>
+      )}
+      <StatusBadge tone="muted" label={v.target} />
+      {dirty && revealed && (
+        <button
+          onClick={() =>
+            update.mutate(
+              { id: v.id, project_id: projectId, value: draft },
+              { onSuccess: () => toast.success("Variable updated") },
+            )
+          }
+          className="text-primary transition-colors hover:text-primary/80"
+          aria-label="Save variable"
+        >
+          <Save className="h-4 w-4" />
+        </button>
+      )}
+      <button
+        onClick={() => navigator.clipboard.writeText(v.value).then(() => toast.success("Copied"))}
+        className="text-muted-foreground transition-colors hover:text-foreground"
+        aria-label="Copy value"
+      >
+        <Copy className="h-4 w-4" />
+      </button>
+      <button
+        onClick={() => {
+          setDraft(v.value);
+          setRevealed((r) => !r);
+        }}
+        className="text-muted-foreground transition-colors hover:text-foreground"
+        aria-label={revealed ? "Hide value" : "Reveal value"}
+      >
+        {revealed ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+      </button>
+      <button
+        onClick={() =>
+          onRemove.mutate(
+            { id: v.id, project_id: projectId },
+            { onSuccess: () => toast.success("Removed") },
+          )
+        }
+        className="text-muted-foreground transition-colors hover:text-destructive"
+        aria-label="Delete variable"
+      >
+        <Trash2 className="h-4 w-4" />
+      </button>
+    </div>
+  );
+}
+
 /* ---------- Domain ---------- */
 function DomainTab({ projectId }: { projectId: string }) {
   const { data: domains, isLoading } = useDomains(projectId);
