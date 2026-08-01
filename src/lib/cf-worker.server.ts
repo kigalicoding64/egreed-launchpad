@@ -181,3 +181,46 @@ export async function syncIngressWorker(platformOrigin: string): Promise<EdgeSyn
 
   return { accountId, scriptDeployed: true, routeId, pattern, logs };
 }
+
+/**
+ * Zone-level fallback when Workers Scripts permissions are unavailable:
+ * a wildcard forwarding Page Rule that sends *.zone/* to the hosted page.
+ */
+async function ensureForwardingPageRule(
+  cfg: CloudflareConfig,
+  zoneName: string,
+  platformOrigin: string,
+): Promise<{ ok: boolean; logs: string[] }> {
+  const urlPattern = `*.${zoneName}/*`;
+  const forwardTo = `${platformOrigin}/hosted/$1`;
+  const body = {
+    targets: [{ target: "url", constraint: { operator: "matches", value: urlPattern } }],
+    actions: [{ id: "forwarding_url", value: { url: forwardTo, status_code: 302 } }],
+    status: "active",
+    priority: 1,
+  };
+
+  const existing = await cfJson<{ id: string; targets: { constraint: { value: string } }[] }[]>(
+    cfg,
+    `/zones/${cfg.zoneId}/pagerules`,
+  );
+  if (!existing.ok) return { ok: false, logs: [] };
+
+  const match = (existing.result ?? []).find(
+    (r) => r.targets?.[0]?.constraint?.value === urlPattern,
+  );
+  const res = match
+    ? await cfJson(cfg, `/zones/${cfg.zoneId}/pagerules/${match.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      })
+    : await cfJson(cfg, `/zones/${cfg.zoneId}/pagerules`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+  if (!res.ok) return { ok: false, logs: [] };
+  return { ok: true, logs: [`✓ Forwarding rule ${urlPattern} → ${forwardTo}`] };
+}
