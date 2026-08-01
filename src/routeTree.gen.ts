@@ -27,6 +27,7 @@ import { Route as AuthenticatedProjectsIndexRouteImport } from './routes/_authen
 import { Route as AuthenticatedProjectsIdRouteImport } from './routes/_authenticated/projects.$id'
 import { Route as ApiPublicWebhooksGithubRouteImport } from './routes/api/public/webhooks/github'
 import { Route as ApiPublicHooksSslRenewRouteImport } from './routes/api/public/hooks/ssl-renew'
+import { Route as ApiPublicHooksEdgeSyncRouteImport } from './routes/api/public/hooks/edge-sync'
 
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
@@ -119,6 +120,11 @@ const ApiPublicHooksSslRenewRoute = ApiPublicHooksSslRenewRouteImport.update({
   path: '/api/public/hooks/ssl-renew',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicHooksEdgeSyncRoute = ApiPublicHooksEdgeSyncRouteImport.update({
+  id: '/api/public/hooks/edge-sync',
+  path: '/api/public/hooks/edge-sync',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -136,6 +142,7 @@ export interface FileRoutesByFullPath {
   '/hosted/$subdomain': typeof HostedSubdomainRoute
   '/projects/$id': typeof AuthenticatedProjectsIdRoute
   '/projects/': typeof AuthenticatedProjectsIndexRoute
+  '/api/public/hooks/edge-sync': typeof ApiPublicHooksEdgeSyncRoute
   '/api/public/hooks/ssl-renew': typeof ApiPublicHooksSslRenewRoute
   '/api/public/webhooks/github': typeof ApiPublicWebhooksGithubRoute
 }
@@ -155,6 +162,7 @@ export interface FileRoutesByTo {
   '/hosted/$subdomain': typeof HostedSubdomainRoute
   '/projects/$id': typeof AuthenticatedProjectsIdRoute
   '/projects': typeof AuthenticatedProjectsIndexRoute
+  '/api/public/hooks/edge-sync': typeof ApiPublicHooksEdgeSyncRoute
   '/api/public/hooks/ssl-renew': typeof ApiPublicHooksSslRenewRoute
   '/api/public/webhooks/github': typeof ApiPublicWebhooksGithubRoute
 }
@@ -176,6 +184,7 @@ export interface FileRoutesById {
   '/hosted/$subdomain': typeof HostedSubdomainRoute
   '/_authenticated/projects/$id': typeof AuthenticatedProjectsIdRoute
   '/_authenticated/projects/': typeof AuthenticatedProjectsIndexRoute
+  '/api/public/hooks/edge-sync': typeof ApiPublicHooksEdgeSyncRoute
   '/api/public/hooks/ssl-renew': typeof ApiPublicHooksSslRenewRoute
   '/api/public/webhooks/github': typeof ApiPublicWebhooksGithubRoute
 }
@@ -197,6 +206,7 @@ export interface FileRouteTypes {
     | '/hosted/$subdomain'
     | '/projects/$id'
     | '/projects/'
+    | '/api/public/hooks/edge-sync'
     | '/api/public/hooks/ssl-renew'
     | '/api/public/webhooks/github'
   fileRoutesByTo: FileRoutesByTo
@@ -216,6 +226,7 @@ export interface FileRouteTypes {
     | '/hosted/$subdomain'
     | '/projects/$id'
     | '/projects'
+    | '/api/public/hooks/edge-sync'
     | '/api/public/hooks/ssl-renew'
     | '/api/public/webhooks/github'
   id:
@@ -236,6 +247,7 @@ export interface FileRouteTypes {
     | '/hosted/$subdomain'
     | '/_authenticated/projects/$id'
     | '/_authenticated/projects/'
+    | '/api/public/hooks/edge-sync'
     | '/api/public/hooks/ssl-renew'
     | '/api/public/webhooks/github'
   fileRoutesById: FileRoutesById
@@ -249,6 +261,7 @@ export interface RootRouteChildren {
   PricingRoute: typeof PricingRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   HostedSubdomainRoute: typeof HostedSubdomainRoute
+  ApiPublicHooksEdgeSyncRoute: typeof ApiPublicHooksEdgeSyncRoute
   ApiPublicHooksSslRenewRoute: typeof ApiPublicHooksSslRenewRoute
   ApiPublicWebhooksGithubRoute: typeof ApiPublicWebhooksGithubRoute
 }
@@ -381,6 +394,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksSslRenewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/edge-sync': {
+      id: '/api/public/hooks/edge-sync'
+      path: '/api/public/hooks/edge-sync'
+      fullPath: '/api/public/hooks/edge-sync'
+      preLoaderRoute: typeof ApiPublicHooksEdgeSyncRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -418,6 +438,7 @@ const rootRouteChildren: RootRouteChildren = {
   PricingRoute: PricingRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   HostedSubdomainRoute: HostedSubdomainRoute,
+  ApiPublicHooksEdgeSyncRoute: ApiPublicHooksEdgeSyncRoute,
   ApiPublicHooksSslRenewRoute: ApiPublicHooksSslRenewRoute,
   ApiPublicWebhooksGithubRoute: ApiPublicWebhooksGithubRoute,
 }
