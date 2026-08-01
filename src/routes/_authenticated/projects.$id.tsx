@@ -440,25 +440,7 @@ function EnvTab({ projectId }: { projectId: string }) {
         ) : (
           <div className="divide-y divide-border">
             {(vars ?? []).map((v) => (
-              <div key={v.id} className="flex items-center gap-3 px-5 py-3.5">
-                <span className="font-mono text-sm font-medium text-foreground">{v.key}</span>
-                <span className="flex-1 truncate font-mono text-xs text-muted-foreground">
-                  {"•".repeat(Math.min(v.value.length, 16))}
-                </span>
-                <StatusBadge tone="muted" label={v.target} />
-                <button
-                  onClick={() =>
-                    remove.mutate(
-                      { id: v.id, project_id: projectId },
-                      { onSuccess: () => toast.success("Removed") },
-                    )
-                  }
-                  className="text-muted-foreground transition-colors hover:text-destructive"
-                  aria-label="Delete variable"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
+              <EnvRow key={v.id} envVar={v} projectId={projectId} onRemove={remove} />
             ))}
           </div>
         )}
