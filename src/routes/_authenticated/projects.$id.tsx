@@ -243,15 +243,20 @@ function OverviewTab({ project }: { project: ReturnType<typeof useProject>["data
 /* ---------- Deployments ---------- */
 function DeploymentsTab({ projectId }: { projectId: string }) {
   const { data: deployments, isLoading } = useDeployments(projectId);
+  const rollback = useRollback();
+  const [rollingBack, setRollingBack] = useState<string | null>(null);
   if (isLoading) return <Skeleton className="h-40 rounded-2xl" />;
   if ((deployments ?? []).length === 0)
     return <EmptyCard icon={Rocket} text="No deployments yet." />;
+
+  const current = deployments?.[0]?.id;
 
   return (
     <div className="overflow-hidden rounded-2xl border border-border bg-card divide-y divide-border">
       {(deployments ?? []).map((d) => {
         const meta = DEPLOY_STATUS_META[d.status];
         const inProgress = d.status === "building" || d.status === "deploying";
+        const canRollback = d.id !== current && d.status === "online";
         return (
           <div key={d.id} className="px-5 py-4">
             <div className="flex items-center gap-4">
@@ -271,6 +276,31 @@ function DeploymentsTab({ projectId }: { projectId: string }) {
               <span className="hidden w-28 text-right text-xs text-muted-foreground sm:block">
                 {formatDistanceToNow(new Date(d.created_at), { addSuffix: true })}
               </span>
+              {d.id === current ? (
+                <StatusBadge tone="info" label="Current" />
+              ) : canRollback ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={rollback.isPending}
+                  onClick={() => {
+                    setRollingBack(d.id);
+                    rollback.mutate(d, {
+                      onSuccess: () => toast.success("Rollback deployment started"),
+                      onError: (e) =>
+                        toast.error(e instanceof Error ? e.message : "Rollback failed"),
+                      onSettled: () => setRollingBack(null),
+                    });
+                  }}
+                >
+                  {rollingBack === d.id ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <History className="h-3.5 w-3.5" />
+                  )}
+                  Rollback
+                </Button>
+              ) : null}
             </div>
             {inProgress && (
               <div className="mt-3 flex items-center gap-3">
