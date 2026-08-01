@@ -11,6 +11,10 @@ import {
   Copy,
   Rocket,
   Terminal,
+  History,
+  Eye,
+  EyeOff,
+  Save,
 } from "lucide-react";
 import { StatusBadge } from "@/components/brand/StatusBadge";
 import { Button } from "@/components/ui/button";
@@ -50,6 +54,8 @@ import {
   useDeleteEnvVar,
   useProvisionDomain,
   useRefreshDomain,
+  useRollback,
+  useUpdateEnvVar,
 } from "@/lib/queries";
 import {
   PROJECT_STATUS_META,
@@ -287,7 +293,7 @@ function DeploymentsTab({ projectId }: { projectId: string }) {
                     setRollingBack(d.id);
                     rollback.mutate(d, {
                       onSuccess: () => toast.success("Rollback deployment started"),
-                      onError: (e) =>
+                      onError: (e: unknown) =>
                         toast.error(e instanceof Error ? e.message : "Rollback failed"),
                       onSettled: () => setRollingBack(null),
                     });
