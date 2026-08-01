@@ -16,6 +16,7 @@ function DomainsPage() {
   const { data: domains, isLoading } = useDomains();
   const { data: projects } = useProjects();
   const refresh = useRefreshDomain();
+  const syncEdge = useSyncEdgeRouting();
 
   const projectName = (id: string) => projects?.find((p) => p.id === id)?.name ?? "Project";
 
@@ -25,6 +26,36 @@ function DomainsPage() {
         title="Domains"
         description={`Subdomains assigned under ${ROOT_DOMAIN} with automatic DNS + SSL.`}
       />
+
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card/40 p-4">
+        <div className="flex items-start gap-3">
+          <Zap className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+          <p className="text-sm text-muted-foreground">
+            Edge routing serves every <span className="font-mono">*.{ROOT_DOMAIN}</span> subdomain
+            from the EGREED edge network. Re-sync after changing DNS or the platform origin.
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={syncEdge.isPending}
+          onClick={() =>
+            syncEdge.mutate(undefined, {
+              onSuccess: (r) => toast.success(`Edge routing synced — ${r.pattern}`),
+              onError: (e) =>
+                toast.error(e instanceof Error ? e.message : "Edge routing sync failed"),
+            })
+          }
+        >
+          {syncEdge.isPending ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Zap className="h-4 w-4" />
+          )}
+          Sync edge routing
+        </Button>
+      </div>
+
 
       {isLoading ? (
         <div className="space-y-3">
