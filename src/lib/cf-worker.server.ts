@@ -124,8 +124,16 @@ export async function syncIngressWorker(platformOrigin: string): Promise<EdgeSyn
     { method: "PUT", body: form },
   );
   if (!upload.ok) {
+    // Fallback: a zone-level forwarding Page Rule still gets every subdomain
+    // onto a real page, just via redirect instead of transparent proxying.
+    const fallback = await ensureForwardingPageRule(cfg, zoneName, platformOrigin);
+    if (fallback.ok) {
+      logs.push(`• Worker upload unavailable — using forwarding rule instead`);
+      logs.push(...fallback.logs);
+      return { accountId, scriptDeployed: false, routeId: null, pattern: `*.${zoneName}/*`, logs };
+    }
     throw new Error(
-      `Worker upload failed — ${fmt(upload.errors)}. The API token needs "Account → Workers Scripts → Edit".`,
+      `Worker upload failed — ${fmt(upload.errors)}. Add "Account → Workers Scripts → Edit" (or "Zone → Page Rules → Edit") to the Cloudflare API token, then sync again.`,
     );
   }
   logs.push(`✓ Worker "${WORKER_NAME}" deployed → ${platformOrigin}/hosted/*`);
