@@ -1,10 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Globe, ExternalLink, ShieldCheck, RefreshCw, Loader2 } from "lucide-react";
+import { Globe, ExternalLink, ShieldCheck, RefreshCw, Loader2, Zap } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/dashboard/DashboardShell";
 import { StatusBadge } from "@/components/brand/StatusBadge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { useDomains, useProjects, useRefreshDomain } from "@/lib/queries";
+import { useDomains, useProjects, useRefreshDomain, useSyncEdgeRouting } from "@/lib/queries";
 import { SSL_STATUS_META, DNS_STATUS_META, ROOT_DOMAIN } from "@/lib/egreed";
 
 
@@ -41,8 +42,8 @@ function DomainsPage() {
           disabled={syncEdge.isPending}
           onClick={() =>
             syncEdge.mutate(undefined, {
-              onSuccess: (r) => toast.success(`Edge routing synced — ${r.pattern}`),
-              onError: (e) =>
+              onSuccess: (r: { pattern: string }) => toast.success(`Edge routing synced — ${r.pattern}`),
+              onError: (e: unknown) =>
                 toast.error(e instanceof Error ? e.message : "Edge routing sync failed"),
             })
           }
