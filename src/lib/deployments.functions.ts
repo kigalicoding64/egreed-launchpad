@@ -7,12 +7,20 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
  */
 export const triggerDeployment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { projectId: string; commitMessage?: string; branch?: string }) => {
-    if (!data?.projectId || typeof data.projectId !== "string") {
-      throw new Error("projectId is required");
-    }
-    return data;
-  })
+  .inputValidator(
+    (data: {
+      projectId: string;
+      commitMessage?: string;
+      branch?: string;
+      commitHash?: string;
+      triggeredBy?: string;
+    }) => {
+      if (!data?.projectId || typeof data.projectId !== "string") {
+        throw new Error("projectId is required");
+      }
+      return data;
+    },
+  )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
 
@@ -29,12 +37,12 @@ export const triggerDeployment = createServerFn({ method: "POST" })
       .insert({
         user_id: userId,
         project_id: project.id,
-        commit_hash: Math.random().toString(16).slice(2, 9),
+        commit_hash: data.commitHash ?? Math.random().toString(16).slice(2, 9),
         commit_message: data.commitMessage ?? "Manual deployment",
         branch: data.branch ?? project.branch ?? "main",
         status: "queued",
         progress: 0,
-        triggered_by: "manual",
+        triggered_by: data.triggeredBy ?? "manual",
       })
       .select("id")
       .single();

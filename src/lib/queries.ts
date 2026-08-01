@@ -7,7 +7,7 @@ import {
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { triggerDeployment } from "@/lib/deployments.functions";
-import { provisionDomain, refreshDomain } from "@/lib/domains.functions";
+import { provisionDomain, refreshDomain, syncEdgeRouting } from "@/lib/domains.functions";
 import {
   buildLogsFor,
   subdomainFor,
@@ -521,4 +521,53 @@ export function useDeleteEnvVar() {
     },
     onSuccess: (_r, vars) => qc.invalidateQueries({ queryKey: ["env-vars", vars.project_id] }),
   });
+}
+
+/** Update an existing environment variable's value/target. */
+export function useUpdateEnvVar() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: {
+      id: string;
+      project_id: string;
+      value?: string;
+      target?: EnvTarget;
+    }) => {
+      const { id, project_id: _p, ...patch } = input;
+      const { error } = await db.from("env_vars").update(patch).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: (_r, v) => qc.invalidateQueries({ queryKey: ["env-vars", v.project_id] }),
+  });
+}
+
+/** Roll a project back to a previous deployment's commit. */
+export function useRollback() {
+  const qc = useQueryClient();
+  const trigger = useServerFn(triggerDeployment);
+  return useMutation({
+    mutationFn: async (deployment: Deployment) =>
+      trigger({
+        data: {
+          projectId: deployment.project_id,
+          commitHash: deployment.commit_hash ?? undefined,
+          commitMessage: `Rollback to ${deployment.commit_hash?.slice(0, 7) ?? "previous"} — ${
+            deployment.commit_message ?? "deployment"
+          }`,
+          branch: deployment.branch,
+          triggeredBy: "rollback",
+        },
+      }),
+    onSuccess: (_d, deployment) => {
+      qc.invalidateQueries({ queryKey: ["deployments"] });
+      qc.invalidateQueries({ queryKey: ["projects"] });
+      qc.invalidateQueries({ queryKey: ["project", deployment.project_id] });
+    },
+  });
+}
+
+/** Deploy/refresh the Cloudflare edge worker serving *.egreedtech.org. */
+export function useSyncEdgeRouting() {
+  const sync = useServerFn(syncEdgeRouting);
+  return useMutation({ mutationFn: async () => sync({ data: undefined as never }) });
 }
