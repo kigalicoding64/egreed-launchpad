@@ -8,6 +8,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { triggerDeployment } from "@/lib/deployments.functions";
 import { provisionDomain, refreshDomain, syncEdgeRouting } from "@/lib/domains.functions";
+import { rebuildPreview } from "@/lib/preview.functions";
 import {
   buildLogsFor,
   subdomainFor,
@@ -570,4 +571,21 @@ export function useRollback() {
 export function useSyncEdgeRouting() {
   const sync = useServerFn(syncEdgeRouting);
   return useMutation({ mutationFn: async () => sync({ data: undefined as never }) });
+}
+
+/** Build a fresh preview from the repository's latest commit. */
+export function useRebuildPreview() {
+  const qc = useQueryClient();
+  const fn = useServerFn(rebuildPreview);
+  return useMutation({
+    mutationFn: async (input: {
+      projectId: string;
+      branch?: string;
+      envOverrides?: Record<string, string>;
+    }) => fn({ data: input }),
+    onSuccess: (_d, input) => {
+      qc.invalidateQueries({ queryKey: ["deployments", input.projectId] });
+      qc.invalidateQueries({ queryKey: ["deployments", "all"] });
+    },
+  });
 }
