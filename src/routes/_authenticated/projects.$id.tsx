@@ -17,6 +17,7 @@ import {
   Save,
 } from "lucide-react";
 import { StatusBadge } from "@/components/brand/StatusBadge";
+import { AppPreview } from "@/components/dashboard/AppPreview";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -162,6 +163,7 @@ function ProjectDetail() {
       <Tabs defaultValue="overview" className="mt-6">
         <TabsList className="w-full justify-start overflow-x-auto">
           <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="preview">Preview</TabsTrigger>
           <TabsTrigger value="deployments">Deployments</TabsTrigger>
           <TabsTrigger value="logs">Logs</TabsTrigger>
           <TabsTrigger value="env">Environment</TabsTrigger>
@@ -171,6 +173,9 @@ function ProjectDetail() {
 
         <TabsContent value="overview" className="mt-6">
           <OverviewTab project={project} />
+        </TabsContent>
+        <TabsContent value="preview" className="mt-6">
+          <AppPreview project={project} />
         </TabsContent>
         <TabsContent value="deployments" className="mt-6">
           <DeploymentsTab projectId={project.id} />
