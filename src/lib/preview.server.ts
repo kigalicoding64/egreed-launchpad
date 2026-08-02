@@ -199,11 +199,8 @@ export async function buildRepoPreview(opts: {
     if (!html) continue;
     const dir = path.includes("/") ? path.slice(0, path.lastIndexOf("/")) : "";
     const base = rawBase(ref, sha, dir);
-    const doc = html
-      .replace(/<head(\s[^>]*)?>/i, (m) => `${m}\n<base href="${base}">\n${envTag}`)
-      .replace(/^(?![\s\S]*<head)/i, () => "");
-    const withEnv = /<head/i.test(html)
-      ? doc
+    const withEnv = /<head(\s[^>]*)?>/i.test(html)
+      ? html.replace(/<head(\s[^>]*)?>/i, (m) => `${m}\n<base href="${base}">\n${envTag}`)
       : `<head><base href="${base}">${envTag}</head>${html}`;
     return {
       html: withEnv,
