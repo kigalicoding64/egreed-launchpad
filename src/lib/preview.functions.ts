@@ -61,9 +61,10 @@ export const rebuildPreview = createServerFn({ method: "POST" })
       projectName: project.name,
       framework: project.framework,
       env,
+      path: data.path ?? "/",
     });
 
-    if (data.record !== false) {
+    if (data.record !== false && (data.path ?? "/") === "/") {
       await supabase.from("deployments").insert({
         user_id: userId,
         project_id: project.id,
@@ -94,6 +95,8 @@ export const rebuildPreview = createServerFn({ method: "POST" })
       commitDate: result.commitDate,
       source: result.source,
       entryPath: result.entryPath,
+      path: result.path,
+      routes: result.routes,
       warnings: result.warnings,
       envKeys: Object.keys(env),
     };
