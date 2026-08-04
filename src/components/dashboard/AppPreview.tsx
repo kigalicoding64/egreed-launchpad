@@ -1,6 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
+  ArrowLeft,
+  ArrowRight,
+  Home,
   ExternalLink,
   GitBranch,
   GitCommitHorizontal,
@@ -40,6 +43,8 @@ interface PreviewBuild {
   commitAuthor: string | null;
   source: string;
   entryPath: string | null;
+  path: string;
+  routes: string[];
   warnings: string[];
   envKeys: string[];
 }
@@ -52,6 +57,13 @@ export function AppPreview({ project }: { project: Project }) {
   const [newKey, setNewKey] = useState("");
   const [newValue, setNewValue] = useState("");
 
+  // In-frame navigation history
+  const [history, setHistory] = useState<string[]>(["/"]);
+  const [cursor, setCursor] = useState(0);
+  const [addressDraft, setAddressDraft] = useState("/");
+  const [hash, setHash] = useState("");
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
+
   const { data: envVars } = useEnvVars(project.id);
   const rebuild = useRebuildPreview();
   const addEnv = useAddEnvVar();
@@ -63,34 +75,101 @@ export function AppPreview({ project }: { project: Project }) {
   );
   const liveUrl = project.domain ? `https://${project.domain}` : project.repository_url;
   const active = DEVICES.find((d) => d.key === device)!;
+  const currentPath = history[cursor] ?? "/";
 
   const previewVars = (envVars ?? []).filter(
     (v) => v.target === "preview" || v.target === "development",
   );
   const productionVars = (envVars ?? []).filter((v) => v.target === "production");
 
-  const run = (extra?: Record<string, string>) =>
-    rebuild.mutate(
-      {
-        projectId: project.id,
-        branch: project.branch,
-        envOverrides: { ...overrides, ...(extra ?? {}) },
-      },
-      {
-        onSuccess: (res) => {
-          setBuild(res as PreviewBuild);
-          toast.success(
-            `Preview built from ${res.commitHash?.slice(0, 7) ?? "latest commit"}`,
-          );
+  const run = useCallback(
+    (opts?: { extraEnv?: Record<string, string>; path?: string; pushHistory?: boolean }) => {
+      const path = opts?.path ?? "/";
+      rebuild.mutate(
+        {
+          projectId: project.id,
+          branch: project.branch,
+          envOverrides: { ...overrides, ...(opts?.extraEnv ?? {}) },
+          path,
         },
-        onError: (e) =>
-          toast.error(e instanceof Error ? e.message : "Could not build the preview"),
-      },
-    );
+        {
+          onSuccess: (res) => {
+            const next = res as PreviewBuild;
+            setBuild(next);
+            setAddressDraft(next.path);
+            setHash("");
+            if (opts?.pushHistory !== false) {
+              setHistory((h) => {
+                const trimmed = h.slice(0, cursor + 1);
+                if (trimmed[trimmed.length - 1] === next.path) return trimmed;
+                const appended = [...trimmed, next.path];
+                setCursor(appended.length - 1);
+                return appended;
+              });
+            }
+          },
+          onError: (e) =>
+            toast.error(e instanceof Error ? e.message : "Could not build the preview"),
+        },
+      );
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [project.id, project.branch, overrides, cursor],
+  );
+
+  const goTo = useCallback(
+    (path: string) => {
+      const clean = path.startsWith("/") ? path : `/${path}`;
+      if (clean === currentPath) return;
+      run({ path: clean });
+    },
+    [currentPath, run],
+  );
+
+  const jump = (delta: number) => {
+    const target = cursor + delta;
+    if (target < 0 || target >= history.length) return;
+    setCursor(target);
+    run({ path: history[target], pushHistory: false });
+  };
+
+  // Navigation events coming from inside the preview frame.
+  useEffect(() => {
+    const onMessage = (event: MessageEvent) => {
+      const data = event.data as
+        | { __egreedPreview?: number; type?: string; path?: string; hash?: string; href?: string }
+        | undefined;
+      if (!data || data.__egreedPreview !== 1) return;
+      if (iframeRef.current && event.source !== iframeRef.current.contentWindow) return;
+
+      if (data.type === "navigate" && data.path) {
+        goTo(data.path);
+      } else if (data.type === "spa" && data.path) {
+        // The app's own router handled it — just reflect the URL.
+        setAddressDraft(data.path);
+        setHistory((h) => {
+          const trimmed = h.slice(0, cursor + 1);
+          if (trimmed[trimmed.length - 1] === data.path) return trimmed;
+          const appended = [...trimmed, data.path!];
+          setCursor(appended.length - 1);
+          return appended;
+        });
+      } else if (data.type === "hash") {
+        setHash(data.hash ?? "");
+      } else if (data.type === "external" && data.href) {
+        window.open(data.href, "_blank", "noopener,noreferrer");
+        toast.info("External link opened in a new tab");
+      }
+    };
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, [goTo, cursor]);
 
   // Build once when the tab first mounts.
   useEffect(() => {
-    run();
+    run({ path: "/", pushHistory: false });
+    setHistory(["/"]);
+    setCursor(0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [project.id]);
 
@@ -105,13 +184,74 @@ export function AppPreview({ project }: { project: Project }) {
             <span className="h-2.5 w-2.5 rounded-full bg-primary/60" />
           </div>
 
-          <div className="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-border bg-background px-3 py-1.5">
-            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
-            <span className="truncate font-mono text-xs text-muted-foreground">
-              preview://{subdomain || project.name} · {project.branch}
-              {build?.commitHash ? ` @ ${build.commitHash.slice(0, 7)}` : ""}
-            </span>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => jump(-1)}
+              disabled={cursor === 0}
+              aria-label="Back"
+              title="Back"
+              className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-foreground disabled:opacity-30"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => jump(1)}
+              disabled={cursor >= history.length - 1}
+              aria-label="Forward"
+              title="Forward"
+              className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-foreground disabled:opacity-30"
+            >
+              <ArrowRight className="h-3.5 w-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => goTo("/")}
+              aria-label="Home"
+              title="Home"
+              className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <Home className="h-3.5 w-3.5" />
+            </button>
           </div>
+
+          <form
+            className="flex min-w-[220px] flex-1 items-center gap-2 rounded-lg border border-border bg-background px-3 py-1.5"
+            onSubmit={(e) => {
+              e.preventDefault();
+              goTo(addressDraft || "/");
+            }}
+          >
+            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+            <span className="shrink-0 font-mono text-xs text-muted-foreground">
+              preview://{subdomain || project.name}
+            </span>
+            <input
+              value={addressDraft}
+              onChange={(e) => setAddressDraft(e.target.value)}
+              aria-label="Preview path"
+              spellCheck={false}
+              className="min-w-0 flex-1 bg-transparent font-mono text-xs text-foreground outline-none"
+            />
+            {hash && <span className="font-mono text-[10px] text-muted-foreground">{hash}</span>}
+          </form>
+
+          {(build?.routes?.length ?? 0) > 1 && (
+            <select
+              value={build?.routes.includes(currentPath) ? currentPath : ""}
+              onChange={(e) => e.target.value && goTo(e.target.value)}
+              aria-label="Pages in this build"
+              className="h-8 max-w-[180px] rounded-lg border border-border bg-background px-2 font-mono text-xs text-muted-foreground outline-none"
+            >
+              <option value="">Pages ({build!.routes.length})</option>
+              {build!.routes.map((r) => (
+                <option key={r} value={r}>
+                  {r}
+                </option>
+              ))}
+            </select>
+          )}
 
           <div className="flex items-center gap-1 rounded-lg border border-border bg-background p-1">
             {DEVICES.map((d) => (
@@ -148,7 +288,7 @@ export function AppPreview({ project }: { project: Project }) {
             )}
           </Button>
 
-          <Button variant="hero" size="sm" onClick={() => run()} disabled={rebuild.isPending}>
+          <Button variant="hero" size="sm" onClick={() => run({ path: currentPath, pushHistory: false })} disabled={rebuild.isPending}>
             {rebuild.isPending ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : (
@@ -332,7 +472,7 @@ export function AppPreview({ project }: { project: Project }) {
               >
                 <Plus className="h-4 w-4" /> Add override
               </Button>
-              <Button variant="hero" onClick={() => run()} disabled={rebuild.isPending}>
+              <Button variant="hero" onClick={() => run({ path: currentPath, pushHistory: false })} disabled={rebuild.isPending}>
                 {rebuild.isPending ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
@@ -363,7 +503,8 @@ export function AppPreview({ project }: { project: Project }) {
             )}
             {build ? (
               <iframe
-                key={build.commitHash + String(build.envKeys.length) + build.source}
+                ref={iframeRef}
+                key={build.commitHash + build.path + String(build.envKeys.length) + build.source}
                 srcDoc={build.html}
                 title={`${project.name} preview`}
                 className="h-full w-full border-0 bg-white"
@@ -375,7 +516,7 @@ export function AppPreview({ project }: { project: Project }) {
                   <p className="text-sm text-muted-foreground">
                     No preview yet — build one from your latest commit.
                   </p>
-                  <Button variant="hero" onClick={() => run()}>
+                  <Button variant="hero" onClick={() => run({ path: currentPath, pushHistory: false })}>
                     <RefreshCw className="h-4 w-4" /> Rebuild preview
                   </Button>
                 </div>
