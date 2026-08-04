@@ -40,6 +40,8 @@ interface PreviewBuild {
   commitAuthor: string | null;
   source: string;
   entryPath: string | null;
+  path: string;
+  routes: string[];
   warnings: string[];
   envKeys: string[];
 }
@@ -52,6 +54,13 @@ export function AppPreview({ project }: { project: Project }) {
   const [newKey, setNewKey] = useState("");
   const [newValue, setNewValue] = useState("");
 
+  // In-frame navigation history
+  const [history, setHistory] = useState<string[]>(["/"]);
+  const [cursor, setCursor] = useState(0);
+  const [addressDraft, setAddressDraft] = useState("/");
+  const [hash, setHash] = useState("");
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
+
   const { data: envVars } = useEnvVars(project.id);
   const rebuild = useRebuildPreview();
   const addEnv = useAddEnvVar();
@@ -63,34 +72,101 @@ export function AppPreview({ project }: { project: Project }) {
   );
   const liveUrl = project.domain ? `https://${project.domain}` : project.repository_url;
   const active = DEVICES.find((d) => d.key === device)!;
+  const currentPath = history[cursor] ?? "/";
 
   const previewVars = (envVars ?? []).filter(
     (v) => v.target === "preview" || v.target === "development",
   );
   const productionVars = (envVars ?? []).filter((v) => v.target === "production");
 
-  const run = (extra?: Record<string, string>) =>
-    rebuild.mutate(
-      {
-        projectId: project.id,
-        branch: project.branch,
-        envOverrides: { ...overrides, ...(extra ?? {}) },
-      },
-      {
-        onSuccess: (res) => {
-          setBuild(res as PreviewBuild);
-          toast.success(
-            `Preview built from ${res.commitHash?.slice(0, 7) ?? "latest commit"}`,
-          );
+  const run = useCallback(
+    (opts?: { extraEnv?: Record<string, string>; path?: string; pushHistory?: boolean }) => {
+      const path = opts?.path ?? "/";
+      rebuild.mutate(
+        {
+          projectId: project.id,
+          branch: project.branch,
+          envOverrides: { ...overrides, ...(opts?.extraEnv ?? {}) },
+          path,
         },
-        onError: (e) =>
-          toast.error(e instanceof Error ? e.message : "Could not build the preview"),
-      },
-    );
+        {
+          onSuccess: (res) => {
+            const next = res as PreviewBuild;
+            setBuild(next);
+            setAddressDraft(next.path);
+            setHash("");
+            if (opts?.pushHistory !== false) {
+              setHistory((h) => {
+                const trimmed = h.slice(0, cursor + 1);
+                if (trimmed[trimmed.length - 1] === next.path) return trimmed;
+                const appended = [...trimmed, next.path];
+                setCursor(appended.length - 1);
+                return appended;
+              });
+            }
+          },
+          onError: (e) =>
+            toast.error(e instanceof Error ? e.message : "Could not build the preview"),
+        },
+      );
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [project.id, project.branch, overrides, cursor],
+  );
+
+  const goTo = useCallback(
+    (path: string) => {
+      const clean = path.startsWith("/") ? path : `/${path}`;
+      if (clean === currentPath) return;
+      run({ path: clean });
+    },
+    [currentPath, run],
+  );
+
+  const jump = (delta: number) => {
+    const target = cursor + delta;
+    if (target < 0 || target >= history.length) return;
+    setCursor(target);
+    run({ path: history[target], pushHistory: false });
+  };
+
+  // Navigation events coming from inside the preview frame.
+  useEffect(() => {
+    const onMessage = (event: MessageEvent) => {
+      const data = event.data as
+        | { __egreedPreview?: number; type?: string; path?: string; hash?: string; href?: string }
+        | undefined;
+      if (!data || data.__egreedPreview !== 1) return;
+      if (iframeRef.current && event.source !== iframeRef.current.contentWindow) return;
+
+      if (data.type === "navigate" && data.path) {
+        goTo(data.path);
+      } else if (data.type === "spa" && data.path) {
+        // The app's own router handled it — just reflect the URL.
+        setAddressDraft(data.path);
+        setHistory((h) => {
+          const trimmed = h.slice(0, cursor + 1);
+          if (trimmed[trimmed.length - 1] === data.path) return trimmed;
+          const appended = [...trimmed, data.path!];
+          setCursor(appended.length - 1);
+          return appended;
+        });
+      } else if (data.type === "hash") {
+        setHash(data.hash ?? "");
+      } else if (data.type === "external" && data.href) {
+        window.open(data.href, "_blank", "noopener,noreferrer");
+        toast.info("External link opened in a new tab");
+      }
+    };
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, [goTo, cursor]);
 
   // Build once when the tab first mounts.
   useEffect(() => {
-    run();
+    run({ path: "/", pushHistory: false });
+    setHistory(["/"]);
+    setCursor(0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [project.id]);
 
