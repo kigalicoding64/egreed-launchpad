@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
+  ArrowLeft,
+  ArrowRight,
+  Home,
   ExternalLink,
   GitBranch,
   GitCommitHorizontal,
@@ -285,7 +288,7 @@ export function AppPreview({ project }: { project: Project }) {
             )}
           </Button>
 
-          <Button variant="hero" size="sm" onClick={() => run()} disabled={rebuild.isPending}>
+          <Button variant="hero" size="sm" onClick={() => run({ path: currentPath, pushHistory: false })} disabled={rebuild.isPending}>
             {rebuild.isPending ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : (
@@ -469,7 +472,7 @@ export function AppPreview({ project }: { project: Project }) {
               >
                 <Plus className="h-4 w-4" /> Add override
               </Button>
-              <Button variant="hero" onClick={() => run()} disabled={rebuild.isPending}>
+              <Button variant="hero" onClick={() => run({ path: currentPath, pushHistory: false })} disabled={rebuild.isPending}>
                 {rebuild.isPending ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
@@ -500,7 +503,8 @@ export function AppPreview({ project }: { project: Project }) {
             )}
             {build ? (
               <iframe
-                key={build.commitHash + String(build.envKeys.length) + build.source}
+                ref={iframeRef}
+                key={build.commitHash + build.path + String(build.envKeys.length) + build.source}
                 srcDoc={build.html}
                 title={`${project.name} preview`}
                 className="h-full w-full border-0 bg-white"
@@ -512,7 +516,7 @@ export function AppPreview({ project }: { project: Project }) {
                   <p className="text-sm text-muted-foreground">
                     No preview yet — build one from your latest commit.
                   </p>
-                  <Button variant="hero" onClick={() => run()}>
+                  <Button variant="hero" onClick={() => run({ path: currentPath, pushHistory: false })}>
                     <RefreshCw className="h-4 w-4" /> Rebuild preview
                   </Button>
                 </div>
