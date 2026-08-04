@@ -167,6 +167,83 @@ const ENTRY_CANDIDATES = [
   "app/index.html",
 ];
 
+/** Normalise an app path to a leading-slash form. */
+function normalisePath(path?: string | null) {
+  const p = (path ?? "/").trim();
+  if (!p || p === "/") return "/";
+  const clean = p.split("#")[0].split("?")[0];
+  return ("/" + clean.replace(/^\/+/, "")).replace(/\/{2,}/g, "/");
+}
+
+/** Turn a repo file path (relative to the served dir) into an app path. */
+function fileToRoute(rel: string) {
+  if (rel === "index.html") return "/";
+  if (rel.endsWith("/index.html")) return "/" + rel.slice(0, -"/index.html".length);
+  return "/" + rel.replace(/\.html$/, "");
+}
+
+/**
+ * Client-side navigation bridge injected into every preview document.
+ * Intercepts link clicks, form GETs and History API calls so multi-page and
+ * SPA routes are reported to the dashboard shell, which rebuilds the frame.
+ */
+function navBridge(basePath: string, currentPath: string) {
+  const cfg = JSON.stringify({ base: basePath, path: currentPath });
+  return `<script>(function(){
+var C=${cfg};
+function post(m){try{parent.postMessage(Object.assign({__egreedPreview:1},m),'*')}catch(e){}}
+function toApp(u){
+  try{
+    var url=new URL(u,document.baseURI);
+    if(url.origin!==location.origin&&url.hostname!=='raw.githubusercontent.com')return null;
+    var p=url.pathname;
+    var i=p.indexOf(C.base);
+    var rel=i>=0?p.slice(i+C.base.length):p.replace(/^\\//,'');
+    return {path:'/'+rel.replace(/^\\//,''),hash:url.hash,search:url.search};
+  }catch(e){return null}
+}
+document.addEventListener('click',function(e){
+  if(e.defaultPrevented||e.button!==0||e.metaKey||e.ctrlKey||e.shiftKey||e.altKey)return;
+  var a=e.target&&e.target.closest?e.target.closest('a'):null;
+  if(!a)return;
+  var href=a.getAttribute('href');
+  if(!href)return;
+  if(/^(mailto:|tel:|javascript:|data:)/i.test(href))return;
+  if(href.charAt(0)==='#')return; /* in-page anchors work natively */
+  if(a.target&&a.target!=='_self'){e.preventDefault();post({type:'external',href:new URL(href,document.baseURI).href});return}
+  var isAbs=/^https?:\\/\\//i.test(href);
+  if(isAbs){
+    var u=new URL(href);
+    if(u.hostname!=='raw.githubusercontent.com'){e.preventDefault();post({type:'external',href:u.href});return}
+  }
+  var t=toApp(href);
+  if(!t)return;
+  e.preventDefault();
+  post({type:'navigate',path:t.path,hash:t.hash});
+},true);
+document.addEventListener('submit',function(e){
+  var f=e.target;
+  if(!f||(f.method||'get').toLowerCase()!=='get')return;
+  var action=f.getAttribute('action');
+  if(!action)return;
+  var t=toApp(action);
+  if(!t)return;
+  e.preventDefault();
+  post({type:'navigate',path:t.path});
+},true);
+['pushState','replaceState'].forEach(function(k){
+  var orig=history[k];
+  history[k]=function(s,t,u){
+    try{orig.apply(history,arguments)}catch(e){}
+    if(u){var r=toApp(u);if(r)post({type:'spa',path:r.path,hash:r.hash})}
+  };
+});
+window.addEventListener('hashchange',function(){post({type:'hash',hash:location.hash})});
+document.addEventListener('DOMContentLoaded',function(){post({type:'ready',title:document.title,path:C.path})});
+post({type:'ready',title:document.title,path:C.path});
+})();</script>`;
+}
+
 /**
  * Build a real preview document for a repository at its latest commit.
  */
@@ -177,6 +254,8 @@ export async function buildRepoPreview(opts: {
   projectName: string;
   framework: string;
   env: Record<string, string>;
+  /** In-app path to render, e.g. "/about". Defaults to "/". */
+  path?: string;
 }): Promise<PreviewResult> {
   const warnings: string[] = [];
   const ref = parseRepo(opts.repositoryUrl, opts.repositoryName);
@@ -196,24 +275,88 @@ export async function buildRepoPreview(opts: {
 
   const sha = commit.sha;
   const envTag = envScriptTag(opts.env);
+  const requested = normalisePath(opts.path);
+
+  // Full file listing — used for route discovery and path resolution.
+  const tree = await ghJson<{ tree: { path: string; type: string }[] }>(
+    `${GH_API}/repos/${ref.owner}/${ref.repo}/git/trees/${sha}?recursive=1`,
+  );
+  const files = (tree?.tree ?? []).filter((t) => t.type === "blob").map((t) => t.path);
 
   // 1. Try to serve a real static entry point from the repo.
   for (const path of ENTRY_CANDIDATES) {
-    const html = await rawFile(ref, sha, path);
-    if (!html) continue;
+    if (files.length && !files.includes(path)) continue;
+    const entryHtml = await rawFile(ref, sha, path);
+    if (!entryHtml) continue;
+
     const dir = path.includes("/") ? path.slice(0, path.lastIndexOf("/")) : "";
     const base = rawBase(ref, sha, dir);
-    const withEnv = /<head(\s[^>]*)?>/i.test(html)
-      ? html.replace(/<head(\s[^>]*)?>/i, (m) => `${m}\n<base href="${base}">\n${envTag}`)
-      : `<head><base href="${base}">${envTag}</head>${html}`;
+    const prefix = dir ? `${dir}/` : "";
+
+    // Every .html file inside the served directory is a navigable route.
+    const routes = Array.from(
+      new Set(
+        files
+          .filter((f) => f.endsWith(".html") && (!prefix || f.startsWith(prefix)))
+          .map((f) => fileToRoute(f.slice(prefix.length)))
+          .filter((r) => !r.includes("node_modules")),
+      ),
+    ).sort((a, b) => (a === "/" ? -1 : b === "/" ? 1 : a.localeCompare(b)));
+
+    // Resolve the requested app path to a concrete file in the repo.
+    let servedPath = path;
+    let html: string | null = entryHtml;
+    if (requested !== "/") {
+      const rel = requested.replace(/^\//, "").replace(/\/$/, "");
+      const candidates = [rel, `${rel}.html`, `${rel}/index.html`].filter((c) =>
+        c.endsWith(".html"),
+      );
+      let found: string | null = null;
+      for (const c of candidates) {
+        const full = `${prefix}${c}`;
+        if (files.length && !files.includes(full)) continue;
+        const body = await rawFile(ref, sha, full);
+        if (body) {
+          found = full;
+          html = body;
+          break;
+        }
+      }
+      if (found) {
+        servedPath = found;
+      } else {
+        // SPA fallback: serve the entry document and let the app's router
+        // handle the path (matches how static hosts serve SPAs).
+        html = entryHtml;
+        servedPath = path;
+        warnings.push(
+          `No static file matched ${requested} — served ${path} as a single-page-app fallback so the app's own router can handle the route.`,
+        );
+      }
+    }
+
+    const nav = navBridge(new URL(base).pathname, requested);
+    const spaInit =
+      servedPath === path && requested !== "/"
+        ? `<script>try{history.replaceState({}, '', ${JSON.stringify(requested)})}catch(e){}</script>`
+        : "";
+    const head = `\n<base href="${base}">\n${envTag}${spaInit}`;
+    const withEnv = /<head(\s[^>]*)?>/i.test(html!)
+      ? html!.replace(/<head(\s[^>]*)?>/i, (m) => `${m}${head}`)
+      : `<head>${head}</head>${html}`;
+
     return {
-      html: withEnv,
+      html: withEnv.includes("</body>")
+        ? withEnv.replace(/<\/body>/i, `${nav}</body>`)
+        : withEnv + nav,
       commitHash: sha,
       commitMessage: commit.commit.message.split("\n")[0],
       commitAuthor: commit.commit.author?.name ?? null,
       commitDate: commit.commit.author?.date ?? null,
       source: "static-entry",
-      entryPath: path,
+      entryPath: servedPath,
+      path: requested,
+      routes: routes.length ? routes : ["/"],
       warnings,
     };
   }
@@ -226,12 +369,10 @@ export async function buildRepoPreview(opts: {
   const readme =
     (await rawFile(ref, sha, "README.md")) ?? (await rawFile(ref, sha, "readme.md")) ?? null;
 
-  const tree = await ghJson<{ tree: { path: string; type: string }[] }>(
-    `${GH_API}/repos/${ref.owner}/${ref.repo}/git/trees/${sha}`,
-  );
-  const topLevel = (tree?.tree ?? [])
+  const topLevel = files
+    .filter((p) => !p.includes("/"))
     .slice(0, 40)
-    .map((t) => `<li><code>${escapeHtml(t.path)}${t.type === "tree" ? "/" : ""}</code></li>`)
+    .map((p) => `<li><code>${escapeHtml(p)}</code></li>`)
     .join("");
 
   const body = `
@@ -258,6 +399,8 @@ ${readme ? renderMarkdown(readme) : "<p>No README found in this repository.</p>"
     commitDate: commit.commit.author?.date ?? null,
     source: "repository",
     entryPath: null,
+    path: "/",
+    routes: ["/"],
     warnings,
   };
 }
