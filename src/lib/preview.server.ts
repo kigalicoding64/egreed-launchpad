@@ -21,6 +21,10 @@ export interface PreviewResult {
   commitDate: string | null;
   source: string;
   entryPath: string | null;
+  /** The in-app path this document represents (e.g. "/", "/about"). */
+  path: string;
+  /** Discoverable pages inside the served directory, as app paths. */
+  routes: string[];
   warnings: string[];
 }
 
