@@ -181,13 +181,74 @@ export function AppPreview({ project }: { project: Project }) {
             <span className="h-2.5 w-2.5 rounded-full bg-primary/60" />
           </div>
 
-          <div className="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-border bg-background px-3 py-1.5">
-            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
-            <span className="truncate font-mono text-xs text-muted-foreground">
-              preview://{subdomain || project.name} · {project.branch}
-              {build?.commitHash ? ` @ ${build.commitHash.slice(0, 7)}` : ""}
-            </span>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => jump(-1)}
+              disabled={cursor === 0}
+              aria-label="Back"
+              title="Back"
+              className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-foreground disabled:opacity-30"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => jump(1)}
+              disabled={cursor >= history.length - 1}
+              aria-label="Forward"
+              title="Forward"
+              className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-foreground disabled:opacity-30"
+            >
+              <ArrowRight className="h-3.5 w-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => goTo("/")}
+              aria-label="Home"
+              title="Home"
+              className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <Home className="h-3.5 w-3.5" />
+            </button>
           </div>
+
+          <form
+            className="flex min-w-[220px] flex-1 items-center gap-2 rounded-lg border border-border bg-background px-3 py-1.5"
+            onSubmit={(e) => {
+              e.preventDefault();
+              goTo(addressDraft || "/");
+            }}
+          >
+            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+            <span className="shrink-0 font-mono text-xs text-muted-foreground">
+              preview://{subdomain || project.name}
+            </span>
+            <input
+              value={addressDraft}
+              onChange={(e) => setAddressDraft(e.target.value)}
+              aria-label="Preview path"
+              spellCheck={false}
+              className="min-w-0 flex-1 bg-transparent font-mono text-xs text-foreground outline-none"
+            />
+            {hash && <span className="font-mono text-[10px] text-muted-foreground">{hash}</span>}
+          </form>
+
+          {(build?.routes?.length ?? 0) > 1 && (
+            <select
+              value={build?.routes.includes(currentPath) ? currentPath : ""}
+              onChange={(e) => e.target.value && goTo(e.target.value)}
+              aria-label="Pages in this build"
+              className="h-8 max-w-[180px] rounded-lg border border-border bg-background px-2 font-mono text-xs text-muted-foreground outline-none"
+            >
+              <option value="">Pages ({build!.routes.length})</option>
+              {build!.routes.map((r) => (
+                <option key={r} value={r}>
+                  {r}
+                </option>
+              ))}
+            </select>
+          )}
 
           <div className="flex items-center gap-1 rounded-lg border border-border bg-background p-1">
             {DEVICES.map((d) => (
