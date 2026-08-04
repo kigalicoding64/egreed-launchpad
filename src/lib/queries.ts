@@ -582,6 +582,7 @@ export function useRebuildPreview() {
       projectId: string;
       branch?: string;
       envOverrides?: Record<string, string>;
+      path?: string;
     }) => fn({ data: input }),
     onSuccess: (_d, input) => {
       qc.invalidateQueries({ queryKey: ["deployments", input.projectId] });
