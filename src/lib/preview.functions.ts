@@ -64,6 +64,17 @@ export const rebuildPreview = createServerFn({ method: "POST" })
       path: data.path ?? "/",
     });
 
+    const logs = [
+      `→ Fetching ${project.repository_name}@${data.branch ?? project.branch ?? "main"}`,
+      `→ Commit ${result.commitHash?.slice(0, 7) ?? "unknown"} — ${result.commitMessage ?? ""}`,
+      `→ Preview env vars injected: ${Object.keys(env).length}${Object.keys(env).length ? ` (${Object.keys(env).join(", ")})` : ""}`,
+      `→ Source: ${result.source}`,
+      `→ Entry: ${result.entryPath ?? "repository overview"}`,
+      `→ Path: ${result.path} · pages discovered: ${result.routes.length}`,
+      ...result.warnings.map((w) => `! ${w}`),
+      "✓ Preview build ready",
+    ];
+
     if (data.record !== false && (data.path ?? "/") === "/") {
       await supabase.from("deployments").insert({
         user_id: userId,
@@ -76,14 +87,7 @@ export const rebuildPreview = createServerFn({ method: "POST" })
         triggered_by: "preview",
         github_event: "preview",
         finished_at: new Date().toISOString(),
-        build_logs: [
-          `→ Fetching ${project.repository_name}@${data.branch ?? project.branch}`,
-          `→ Commit ${result.commitHash?.slice(0, 7)} — ${result.commitMessage ?? ""}`,
-          `→ Preview env vars injected: ${Object.keys(env).length}`,
-          `→ Entry: ${result.entryPath ?? "repository overview"}`,
-          ...result.warnings.map((w) => `! ${w}`),
-          "✓ Preview build ready",
-        ].join("\n"),
+        build_logs: logs.join("\n"),
       });
     }
 
@@ -99,5 +103,6 @@ export const rebuildPreview = createServerFn({ method: "POST" })
       routes: result.routes,
       warnings: result.warnings,
       envKeys: Object.keys(env),
+      logs,
     };
   });

@@ -16,6 +16,7 @@ import {
   Settings2,
   Smartphone,
   Tablet,
+  Terminal,
   Trash2,
   X,
 } from "lucide-react";
@@ -47,11 +48,16 @@ interface PreviewBuild {
   routes: string[];
   warnings: string[];
   envKeys: string[];
+  logs?: string[];
 }
+
+type ConsoleLine = { id: number; level: string; text: string };
 
 export function AppPreview({ project }: { project: Project }) {
   const [device, setDevice] = useState<DeviceKey>("desktop");
   const [showEnv, setShowEnv] = useState(false);
+  const [showConsole, setShowConsole] = useState(false);
+  const [consoleLines, setConsoleLines] = useState<ConsoleLine[]>([]);
   const [build, setBuild] = useState<PreviewBuild | null>(null);
   const [overrides, setOverrides] = useState<Record<string, string>>({});
   const [newKey, setNewKey] = useState("");
@@ -76,6 +82,9 @@ export function AppPreview({ project }: { project: Project }) {
   const liveUrl = project.domain ? `https://${project.domain}` : project.repository_url;
   const active = DEVICES.find((d) => d.key === device)!;
   const currentPath = history[cursor] ?? "/";
+  const errorCount = consoleLines.filter((l) => l.level === "error").length;
+
+
 
   const previewVars = (envVars ?? []).filter(
     (v) => v.target === "preview" || v.target === "development",
@@ -98,6 +107,7 @@ export function AppPreview({ project }: { project: Project }) {
             setBuild(next);
             setAddressDraft(next.path);
             setHash("");
+            setConsoleLines([]);
             if (opts?.pushHistory !== false) {
               setHistory((h) => {
                 const trimmed = h.slice(0, cursor + 1);
@@ -137,7 +147,15 @@ export function AppPreview({ project }: { project: Project }) {
   useEffect(() => {
     const onMessage = (event: MessageEvent) => {
       const data = event.data as
-        | { __egreedPreview?: number; type?: string; path?: string; hash?: string; href?: string }
+        | {
+            __egreedPreview?: number;
+            type?: string;
+            path?: string;
+            hash?: string;
+            href?: string;
+            level?: string;
+            text?: string;
+          }
         | undefined;
       if (!data || data.__egreedPreview !== 1) return;
       if (iframeRef.current && event.source !== iframeRef.current.contentWindow) return;
@@ -156,6 +174,10 @@ export function AppPreview({ project }: { project: Project }) {
         });
       } else if (data.type === "hash") {
         setHash(data.hash ?? "");
+      } else if (data.type === "console") {
+        setConsoleLines((l) =>
+          [...l, { id: l.length, level: data.level ?? "log", text: data.text ?? "" }].slice(-200),
+        );
       } else if (data.type === "external" && data.href) {
         window.open(data.href, "_blank", "noopener,noreferrer");
         toast.info("External link opened in a new tab");
@@ -287,6 +309,21 @@ export function AppPreview({ project }: { project: Project }) {
               </span>
             )}
           </Button>
+
+          <Button
+            variant={showConsole ? "secondary" : "outline"}
+            size="sm"
+            onClick={() => setShowConsole((s) => !s)}
+          >
+            <Terminal className="h-3.5 w-3.5" />
+            Console
+            {errorCount > 0 && (
+              <span className="ml-1 rounded-full bg-destructive/15 px-1.5 text-[10px] text-destructive">
+                {errorCount}
+              </span>
+            )}
+          </Button>
+
 
           <Button variant="hero" size="sm" onClick={() => run({ path: currentPath, pushHistory: false })} disabled={rebuild.isPending}>
             {rebuild.isPending ? (
@@ -553,6 +590,63 @@ export function AppPreview({ project }: { project: Project }) {
           </span>
         </div>
       </div>
+
+      {showConsole && (
+        <div className="overflow-hidden rounded-2xl border border-border bg-card">
+          <div className="flex items-center justify-between gap-2 border-b border-border bg-secondary/40 px-4 py-2.5">
+            <span className="inline-flex items-center gap-2 text-xs font-medium text-foreground">
+              <Terminal className="h-3.5 w-3.5" /> Build log &amp; runtime console
+            </span>
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="sm" onClick={() => setConsoleLines([])}>
+                Clear
+              </Button>
+              <button
+                type="button"
+                onClick={() => setShowConsole(false)}
+                aria-label="Close console"
+                className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
+          <div className="max-h-64 overflow-auto bg-background/60 p-4 font-mono text-xs leading-relaxed">
+            {(build?.logs ?? []).map((l, i) => (
+              <div
+                key={`build-${i}`}
+                className={l.startsWith("!") ? "text-accent" : "text-muted-foreground"}
+              >
+                {l}
+              </div>
+            ))}
+            {consoleLines.length > 0 && (
+              <div className="my-2 border-t border-border pt-2 text-[10px] uppercase tracking-wide text-muted-foreground">
+                Runtime
+              </div>
+            )}
+            {consoleLines.map((l) => (
+              <div
+                key={l.id}
+                className={
+                  l.level === "error"
+                    ? "text-destructive"
+                    : l.level === "warn"
+                      ? "text-accent"
+                      : "text-muted-foreground"
+                }
+              >
+                <span className="opacity-60">[{l.level}]</span> {l.text}
+              </div>
+            ))}
+            {!build?.logs?.length && consoleLines.length === 0 && (
+              <p className="text-muted-foreground">No output yet — rebuild the preview.</p>
+            )}
+          </div>
+        </div>
+      )}
+
+
 
       {(build?.warnings.length ?? 0) > 0 && (
         <div className="flex gap-3 rounded-2xl border border-accent/30 bg-accent/8 p-4">
