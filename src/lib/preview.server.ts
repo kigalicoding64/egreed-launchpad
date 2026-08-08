@@ -239,6 +239,22 @@ document.addEventListener('submit',function(e){
   };
 });
 window.addEventListener('hashchange',function(){post({type:'hash',hash:location.hash})});
+/* Forward runtime console output + errors to the dashboard console panel. */
+function fmt(a){try{return Array.prototype.slice.call(a).map(function(x){
+  if(typeof x==='string')return x;
+  try{return JSON.stringify(x)}catch(e){return String(x)}
+}).join(' ')}catch(e){return ''}}
+['log','info','warn','error','debug'].forEach(function(lvl){
+  var orig=console[lvl];
+  console[lvl]=function(){try{post({type:'console',level:lvl,text:fmt(arguments)})}catch(e){}
+    try{orig&&orig.apply(console,arguments)}catch(e){}};
+});
+window.addEventListener('error',function(e){
+  post({type:'console',level:'error',text:(e.message||'Script error')+(e.filename?' ('+e.filename+':'+e.lineno+')':'')});
+});
+window.addEventListener('unhandledrejection',function(e){
+  post({type:'console',level:'error',text:'Unhandled promise rejection: '+String((e.reason&&e.reason.message)||e.reason)});
+});
 document.addEventListener('DOMContentLoaded',function(){post({type:'ready',title:document.title,path:C.path})});
 post({type:'ready',title:document.title,path:C.path});
 })();</script>`;
