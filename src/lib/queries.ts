@@ -7,7 +7,7 @@ import {
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { triggerDeployment } from "@/lib/deployments.functions";
-import { provisionDomain, refreshDomain, syncEdgeRouting } from "@/lib/domains.functions";
+import { addDomain, provisionDomain, refreshDomain, syncEdgeRouting } from "@/lib/domains.functions";
 import { rebuildPreview } from "@/lib/preview.functions";
 import {
   buildLogsFor,
@@ -470,6 +470,40 @@ export function useRefreshDomain() {
   return useMutation({
     mutationFn: async (domainId: string) => fn({ data: { domainId } }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["domains"] }),
+  });
+}
+
+/** True when the signed-in user has the admin role. */
+export function useIsAdmin() {
+  return useQuery({
+    queryKey: ["is-admin"],
+    queryFn: async (): Promise<boolean> => {
+      const { data: auth } = await supabase.auth.getUser();
+      const uid = auth.user?.id;
+      if (!uid) return false;
+      const { data, error } = await db
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", uid)
+        .eq("role", "admin");
+      if (error) throw error;
+      return (data ?? []).length > 0;
+    },
+    staleTime: 5 * 60_000,
+  });
+}
+
+/** Admin-only: attach an extra domain (platform subdomain or custom) to a project. */
+export function useAddDomain() {
+  const qc = useQueryClient();
+  const fn = useServerFn(addDomain);
+  return useMutation({
+    mutationFn: async (input: { projectId: string; domain: string; primary?: boolean }) =>
+      fn({ data: input }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["domains"] });
+      qc.invalidateQueries({ queryKey: ["projects"] });
+    },
   });
 }
 

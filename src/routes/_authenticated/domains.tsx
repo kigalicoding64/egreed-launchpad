@@ -1,11 +1,36 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Globe, ExternalLink, ShieldCheck, RefreshCw, Loader2, Zap } from "lucide-react";
+import { useState } from "react";
+import { Globe, ExternalLink, ShieldCheck, RefreshCw, Loader2, Zap, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { PageHeader } from "@/components/dashboard/DashboardShell";
 import { StatusBadge } from "@/components/brand/StatusBadge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { useDomains, useProjects, useRefreshDomain, useSyncEdgeRouting } from "@/lib/queries";
+import {
+  useAddDomain,
+  useDomains,
+  useIsAdmin,
+  useProjects,
+  useRefreshDomain,
+  useSyncEdgeRouting,
+} from "@/lib/queries";
 import { SSL_STATUS_META, DNS_STATUS_META, ROOT_DOMAIN } from "@/lib/egreed";
 
 
@@ -16,8 +41,34 @@ export const Route = createFileRoute("/_authenticated/domains")({
 function DomainsPage() {
   const { data: domains, isLoading } = useDomains();
   const { data: projects } = useProjects();
+  const { data: isAdmin } = useIsAdmin();
   const refresh = useRefreshDomain();
   const syncEdge = useSyncEdgeRouting();
+  const addDomain = useAddDomain();
+
+  const [open, setOpen] = useState(false);
+  const [projectId, setProjectId] = useState("");
+  const [domainInput, setDomainInput] = useState("");
+  const [primary, setPrimary] = useState(false);
+
+  const submitDomain = () => {
+    if (!projectId) return toast.error("Choose a project");
+    if (!domainInput.trim()) return toast.error("Enter a domain");
+    addDomain.mutate(
+      { projectId, domain: domainInput, primary },
+      {
+        onSuccess: (r: { external: boolean; logs: string[] }) => {
+          toast.success(r.external ? "Custom domain added — add the CNAME at your registrar" : "Domain added and provisioning started");
+          if (r.external) toast.info(r.logs[1]);
+          setOpen(false);
+          setDomainInput("");
+          setPrimary(false);
+        },
+        onError: (e) => toast.error(e instanceof Error ? e.message : "Could not add the domain"),
+      },
+    );
+  };
+
 
   const projectName = (id: string) => projects?.find((p) => p.id === id)?.name ?? "Project";
 
@@ -55,7 +106,80 @@ function DomainsPage() {
           )}
           Sync edge routing
         </Button>
+        {isAdmin && (
+          <Button size="sm" variant="hero" onClick={() => setOpen(true)}>
+            <Plus className="h-4 w-4" />
+            Add domain
+          </Button>
+        )}
       </div>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add a domain</DialogTitle>
+            <DialogDescription>
+              Enter a label for a platform subdomain (e.g. <span className="font-mono">shop</span> →{" "}
+              <span className="font-mono">shop.{ROOT_DOMAIN}</span>) or a full custom domain you own.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label>Project</Label>
+              <Select value={projectId} onValueChange={setProjectId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a project" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(projects ?? []).map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="domain-input">Domain</Label>
+              <Input
+                id="domain-input"
+                value={domainInput}
+                placeholder={`shop  or  app.mycompany.com`}
+                onChange={(e) => setDomainInput(e.target.value)}
+                className="font-mono"
+              />
+            </div>
+
+            <label className="flex items-center gap-2 text-sm text-muted-foreground">
+              <input
+                type="checkbox"
+                checked={primary}
+                onChange={(e) => setPrimary(e.target.checked)}
+                className="h-4 w-4 accent-[hsl(var(--primary))]"
+              />
+              Make this the project&apos;s primary domain
+            </label>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="hero" onClick={submitDomain} disabled={addDomain.isPending}>
+              {addDomain.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Plus className="h-4 w-4" />
+              )}
+              Add domain
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+
 
 
       {isLoading ? (
