@@ -306,6 +306,21 @@ export function AppPreview({ project }: { project: Project }) {
             )}
           </Button>
 
+          <Button
+            variant={showConsole ? "secondary" : "outline"}
+            size="sm"
+            onClick={() => setShowConsole((s) => !s)}
+          >
+            <Terminal className="h-3.5 w-3.5" />
+            Console
+            {errorCount > 0 && (
+              <span className="ml-1 rounded-full bg-destructive/15 px-1.5 text-[10px] text-destructive">
+                {errorCount}
+              </span>
+            )}
+          </Button>
+
+
           <Button variant="hero" size="sm" onClick={() => run({ path: currentPath, pushHistory: false })} disabled={rebuild.isPending}>
             {rebuild.isPending ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
