@@ -16,6 +16,7 @@ import {
   Settings2,
   Smartphone,
   Tablet,
+  Terminal,
   Trash2,
   X,
 } from "lucide-react";
