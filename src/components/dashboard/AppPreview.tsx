@@ -143,7 +143,15 @@ export function AppPreview({ project }: { project: Project }) {
   useEffect(() => {
     const onMessage = (event: MessageEvent) => {
       const data = event.data as
-        | { __egreedPreview?: number; type?: string; path?: string; hash?: string; href?: string }
+        | {
+            __egreedPreview?: number;
+            type?: string;
+            path?: string;
+            hash?: string;
+            href?: string;
+            level?: string;
+            text?: string;
+          }
         | undefined;
       if (!data || data.__egreedPreview !== 1) return;
       if (iframeRef.current && event.source !== iframeRef.current.contentWindow) return;
@@ -162,6 +170,10 @@ export function AppPreview({ project }: { project: Project }) {
         });
       } else if (data.type === "hash") {
         setHash(data.hash ?? "");
+      } else if (data.type === "console") {
+        setConsoleLines((l) =>
+          [...l, { id: l.length, level: data.level ?? "log", text: data.text ?? "" }].slice(-200),
+        );
       } else if (data.type === "external" && data.href) {
         window.open(data.href, "_blank", "noopener,noreferrer");
         toast.info("External link opened in a new tab");
