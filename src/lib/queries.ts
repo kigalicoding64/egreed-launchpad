@@ -7,7 +7,7 @@ import {
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { triggerDeployment } from "@/lib/deployments.functions";
-import { provisionDomain, refreshDomain, syncEdgeRouting } from "@/lib/domains.functions";
+import { addDomain, provisionDomain, refreshDomain, syncEdgeRouting } from "@/lib/domains.functions";
 import { rebuildPreview } from "@/lib/preview.functions";
 import {
   buildLogsFor,
