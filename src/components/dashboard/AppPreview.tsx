@@ -82,6 +82,9 @@ export function AppPreview({ project }: { project: Project }) {
   const liveUrl = project.domain ? `https://${project.domain}` : project.repository_url;
   const active = DEVICES.find((d) => d.key === device)!;
   const currentPath = history[cursor] ?? "/";
+  const errorCount = consoleLines.filter((l) => l.level === "error").length;
+
+
 
   const previewVars = (envVars ?? []).filter(
     (v) => v.target === "preview" || v.target === "development",
