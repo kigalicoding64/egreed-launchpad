@@ -591,6 +591,63 @@ export function AppPreview({ project }: { project: Project }) {
         </div>
       </div>
 
+      {showConsole && (
+        <div className="overflow-hidden rounded-2xl border border-border bg-card">
+          <div className="flex items-center justify-between gap-2 border-b border-border bg-secondary/40 px-4 py-2.5">
+            <span className="inline-flex items-center gap-2 text-xs font-medium text-foreground">
+              <Terminal className="h-3.5 w-3.5" /> Build log &amp; runtime console
+            </span>
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="sm" onClick={() => setConsoleLines([])}>
+                Clear
+              </Button>
+              <button
+                type="button"
+                onClick={() => setShowConsole(false)}
+                aria-label="Close console"
+                className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
+          <div className="max-h-64 overflow-auto bg-background/60 p-4 font-mono text-xs leading-relaxed">
+            {(build?.logs ?? []).map((l, i) => (
+              <div
+                key={`build-${i}`}
+                className={l.startsWith("!") ? "text-accent" : "text-muted-foreground"}
+              >
+                {l}
+              </div>
+            ))}
+            {consoleLines.length > 0 && (
+              <div className="my-2 border-t border-border pt-2 text-[10px] uppercase tracking-wide text-muted-foreground">
+                Runtime
+              </div>
+            )}
+            {consoleLines.map((l) => (
+              <div
+                key={l.id}
+                className={
+                  l.level === "error"
+                    ? "text-destructive"
+                    : l.level === "warn"
+                      ? "text-accent"
+                      : "text-muted-foreground"
+                }
+              >
+                <span className="opacity-60">[{l.level}]</span> {l.text}
+              </div>
+            ))}
+            {!build?.logs?.length && consoleLines.length === 0 && (
+              <p className="text-muted-foreground">No output yet — rebuild the preview.</p>
+            )}
+          </div>
+        </div>
+      )}
+
+
+
       {(build?.warnings.length ?? 0) > 0 && (
         <div className="flex gap-3 rounded-2xl border border-accent/30 bg-accent/8 p-4">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
