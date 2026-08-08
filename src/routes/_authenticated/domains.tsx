@@ -106,7 +106,80 @@ function DomainsPage() {
           )}
           Sync edge routing
         </Button>
+        {isAdmin && (
+          <Button size="sm" variant="hero" onClick={() => setOpen(true)}>
+            <Plus className="h-4 w-4" />
+            Add domain
+          </Button>
+        )}
       </div>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add a domain</DialogTitle>
+            <DialogDescription>
+              Enter a label for a platform subdomain (e.g. <span className="font-mono">shop</span> →{" "}
+              <span className="font-mono">shop.{ROOT_DOMAIN}</span>) or a full custom domain you own.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label>Project</Label>
+              <Select value={projectId} onValueChange={setProjectId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a project" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(projects ?? []).map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="domain-input">Domain</Label>
+              <Input
+                id="domain-input"
+                value={domainInput}
+                placeholder={`shop  or  app.mycompany.com`}
+                onChange={(e) => setDomainInput(e.target.value)}
+                className="font-mono"
+              />
+            </div>
+
+            <label className="flex items-center gap-2 text-sm text-muted-foreground">
+              <input
+                type="checkbox"
+                checked={primary}
+                onChange={(e) => setPrimary(e.target.checked)}
+                className="h-4 w-4 accent-[hsl(var(--primary))]"
+              />
+              Make this the project&apos;s primary domain
+            </label>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="hero" onClick={submitDomain} disabled={addDomain.isPending}>
+              {addDomain.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Plus className="h-4 w-4" />
+              )}
+              Add domain
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+
 
 
       {isLoading ? (
