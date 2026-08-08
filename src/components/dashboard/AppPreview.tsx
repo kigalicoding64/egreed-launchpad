@@ -103,6 +103,7 @@ export function AppPreview({ project }: { project: Project }) {
             setBuild(next);
             setAddressDraft(next.path);
             setHash("");
+            setConsoleLines([]);
             if (opts?.pushHistory !== false) {
               setHistory((h) => {
                 const trimmed = h.slice(0, cursor + 1);
