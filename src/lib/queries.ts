@@ -473,6 +473,40 @@ export function useRefreshDomain() {
   });
 }
 
+/** True when the signed-in user has the admin role. */
+export function useIsAdmin() {
+  return useQuery({
+    queryKey: ["is-admin"],
+    queryFn: async (): Promise<boolean> => {
+      const { data: auth } = await supabase.auth.getUser();
+      const uid = auth.user?.id;
+      if (!uid) return false;
+      const { data, error } = await db
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", uid)
+        .eq("role", "admin");
+      if (error) throw error;
+      return (data ?? []).length > 0;
+    },
+    staleTime: 5 * 60_000,
+  });
+}
+
+/** Admin-only: attach an extra domain (platform subdomain or custom) to a project. */
+export function useAddDomain() {
+  const qc = useQueryClient();
+  const fn = useServerFn(addDomain);
+  return useMutation({
+    mutationFn: async (input: { projectId: string; domain: string; primary?: boolean }) =>
+      fn({ data: input }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["domains"] });
+      qc.invalidateQueries({ queryKey: ["projects"] });
+    },
+  });
+}
+
 /* ---------------- Env vars ---------------- */
 
 export function useEnvVars(projectId: string) {
