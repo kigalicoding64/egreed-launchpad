@@ -47,11 +47,16 @@ interface PreviewBuild {
   routes: string[];
   warnings: string[];
   envKeys: string[];
+  logs?: string[];
 }
+
+type ConsoleLine = { id: number; level: string; text: string };
 
 export function AppPreview({ project }: { project: Project }) {
   const [device, setDevice] = useState<DeviceKey>("desktop");
   const [showEnv, setShowEnv] = useState(false);
+  const [showConsole, setShowConsole] = useState(false);
+  const [consoleLines, setConsoleLines] = useState<ConsoleLine[]>([]);
   const [build, setBuild] = useState<PreviewBuild | null>(null);
   const [overrides, setOverrides] = useState<Record<string, string>>({});
   const [newKey, setNewKey] = useState("");
