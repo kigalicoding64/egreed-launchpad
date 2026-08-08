@@ -334,11 +334,26 @@ export function AppPreview({ project }: { project: Project }) {
             Rebuild preview
           </Button>
 
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={!build}
+            onClick={() => {
+              if (!build) return;
+              const url = URL.createObjectURL(new Blob([build.html], { type: "text/html" }));
+              window.open(url, "_blank", "noopener,noreferrer");
+              setTimeout(() => URL.revokeObjectURL(url), 60_000);
+            }}
+          >
+            Open build <ExternalLink className="h-3.5 w-3.5" />
+          </Button>
+
           <Button asChild variant="outline" size="sm">
             <a href={liveUrl} target="_blank" rel="noreferrer">
-              Open <ExternalLink className="h-3.5 w-3.5" />
+              Live <ExternalLink className="h-3.5 w-3.5" />
             </a>
           </Button>
+
         </div>
 
         {/* Env override panel */}
