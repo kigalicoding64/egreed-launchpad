@@ -649,3 +649,104 @@ export function useRebuildPreview() {
     },
   });
 }
+
+/* ---------------- Project files (uploads + workspace edits) ---------------- */
+
+export interface ProjectFile {
+  id: string;
+  project_id: string;
+  path: string;
+  content: string;
+  origin: string;
+  updated_at: string;
+}
+
+export function useProjectFiles(projectId: string) {
+  return useQuery({
+    queryKey: ["project-files", projectId],
+    enabled: !!projectId,
+    queryFn: async (): Promise<ProjectFile[]> => {
+      const { data, error } = await db
+        .from("project_files")
+        .select("*")
+        .eq("project_id", projectId)
+        .order("path");
+      if (error) throw error;
+      return (data ?? []) as ProjectFile[];
+    },
+  });
+}
+
+/** Create or update a file (an overlay edit for repo-backed projects). */
+export function useSaveProjectFile() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: {
+      project_id: string;
+      path: string;
+      content: string;
+      origin?: string;
+    }) => {
+      const user_id = await currentUserId();
+      const { data, error } = await db
+        .from("project_files")
+        .upsert(
+          {
+            project_id: input.project_id,
+            user_id,
+            path: input.path,
+            content: input.content,
+            origin: input.origin ?? "edit",
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "project_id,path" },
+        )
+        .select()
+        .single();
+      if (error) throw error;
+      return data as ProjectFile;
+    },
+    onSuccess: (_d, input) =>
+      qc.invalidateQueries({ queryKey: ["project-files", input.project_id] }),
+  });
+}
+
+export function useDeleteProjectFile() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { id: string; project_id: string }) => {
+      const { error } = await db.from("project_files").delete().eq("id", input.id);
+      if (error) throw error;
+    },
+    onSuccess: (_d, input) =>
+      qc.invalidateQueries({ queryKey: ["project-files", input.project_id] }),
+  });
+}
+
+/** Upload a fresh set of files into an existing project. */
+export function useUploadProjectFiles() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { project_id: string; files: Record<string, string> }) => {
+      const user_id = await currentUserId();
+      const entries = Object.entries(input.files);
+      for (let i = 0; i < entries.length; i += 100) {
+        const chunk = entries.slice(i, i + 100).map(([path, content]) => ({
+          project_id: input.project_id,
+          user_id,
+          path,
+          content,
+          origin: "upload",
+          updated_at: new Date().toISOString(),
+        }));
+        const { error } = await db
+          .from("project_files")
+          .upsert(chunk, { onConflict: "project_id,path" });
+        if (error) throw error;
+      }
+      return entries.length;
+    },
+    onSuccess: (_d, input) =>
+      qc.invalidateQueries({ queryKey: ["project-files", input.project_id] }),
+  });
+}
