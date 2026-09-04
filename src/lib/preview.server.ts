@@ -272,8 +272,11 @@ export async function buildRepoPreview(opts: {
   env: Record<string, string>;
   /** In-app path to render, e.g. "/about". Defaults to "/". */
   path?: string;
+  /** Edited files from the workspace editor, keyed by repo-relative path. */
+  overlay?: Record<string, string>;
 }): Promise<PreviewResult> {
   const warnings: string[] = [];
+  const overlay = opts.overlay ?? {};
   const ref = parseRepo(opts.repositoryUrl, opts.repositoryName);
   if (!ref) throw new Error("Could not determine the GitHub owner/repo for this project.");
 
@@ -292,18 +295,32 @@ export async function buildRepoPreview(opts: {
   const sha = commit.sha;
   const envTag = envScriptTag(opts.env);
   const requested = normalisePath(opts.path);
+  const read = async (p: string) =>
+    Object.prototype.hasOwnProperty.call(overlay, p) ? overlay[p] : await rawFile(ref, sha, p);
+
+  if (Object.keys(overlay).length) {
+    warnings.push(
+      `${Object.keys(overlay).length} workspace edit(s) applied on top of the repository for this preview.`,
+    );
+  }
 
   // Full file listing — used for route discovery and path resolution.
   const tree = await ghJson<{ tree: { path: string; type: string }[] }>(
     `${GH_API}/repos/${ref.owner}/${ref.repo}/git/trees/${sha}?recursive=1`,
   );
-  const files = (tree?.tree ?? []).filter((t) => t.type === "blob").map((t) => t.path);
+  const files = Array.from(
+    new Set([
+      ...(tree?.tree ?? []).filter((t) => t.type === "blob").map((t) => t.path),
+      ...Object.keys(overlay),
+    ]),
+  );
 
   // 1. Try to serve a real static entry point from the repo.
   for (const path of ENTRY_CANDIDATES) {
     if (files.length && !files.includes(path)) continue;
-    const entryHtml = await rawFile(ref, sha, path);
+    const entryHtml = await read(path);
     if (!entryHtml) continue;
+
 
     const dir = path.includes("/") ? path.slice(0, path.lastIndexOf("/")) : "";
     const base = rawBase(ref, sha, dir);
