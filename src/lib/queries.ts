@@ -272,11 +272,31 @@ export function useDeployProject() {
           status: "online",
           domain,
           auto_deploy: true,
+          source_type: input.source_type ?? "github",
         })
         .select()
         .single();
       if (error) throw error;
       const p = project as Project;
+
+      // Uploaded sources: persist the files so previews and the workspace
+      // editor can serve them straight from the platform.
+      const uploaded = Object.entries(input.files ?? {});
+      if (uploaded.length) {
+        for (let i = 0; i < uploaded.length; i += 100) {
+          const chunk = uploaded.slice(i, i + 100).map(([path, content]) => ({
+            project_id: p.id,
+            user_id,
+            path,
+            content,
+            origin: "upload",
+          }));
+          const { error: fileError } = await db.from("project_files").insert(chunk);
+          if (fileError) throw fileError;
+        }
+      }
+
+
 
       // Primary subdomain, created in a pending state; provisioned below.
       await db.from("domains").insert({
