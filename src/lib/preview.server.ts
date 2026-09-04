@@ -348,7 +348,7 @@ export async function buildRepoPreview(opts: {
       for (const c of candidates) {
         const full = `${prefix}${c}`;
         if (files.length && !files.includes(full)) continue;
-        const body = await rawFile(ref, sha, full);
+        const body = await read(full);
         if (body) {
           found = full;
           html = body;
@@ -400,7 +400,7 @@ export async function buildRepoPreview(opts: {
   );
 
   const readme =
-    (await rawFile(ref, sha, "README.md")) ?? (await rawFile(ref, sha, "readme.md")) ?? null;
+    (await read("README.md")) ?? (await read("readme.md")) ?? null;
 
   const topLevel = files
     .filter((p) => !p.includes("/"))
