@@ -170,7 +170,12 @@ export interface CreateProjectInput {
   framework: string;
   branch: string;
   build_command?: string | null;
+  /** "github" (default) or "upload" for ZIP/folder uploads. */
+  source_type?: "github" | "upload";
+  /** Uploaded file contents, keyed by relative path. */
+  files?: Record<string, string>;
 }
+
 
 export function useCreateProject() {
   const qc = useQueryClient();
