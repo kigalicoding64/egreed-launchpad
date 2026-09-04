@@ -170,7 +170,12 @@ export interface CreateProjectInput {
   framework: string;
   branch: string;
   build_command?: string | null;
+  /** "github" (default) or "upload" for ZIP/folder uploads. */
+  source_type?: "github" | "upload";
+  /** Uploaded file contents, keyed by relative path. */
+  files?: Record<string, string>;
 }
+
 
 export function useCreateProject() {
   const qc = useQueryClient();
@@ -267,11 +272,31 @@ export function useDeployProject() {
           status: "online",
           domain,
           auto_deploy: true,
+          source_type: input.source_type ?? "github",
         })
         .select()
         .single();
       if (error) throw error;
       const p = project as Project;
+
+      // Uploaded sources: persist the files so previews and the workspace
+      // editor can serve them straight from the platform.
+      const uploaded = Object.entries(input.files ?? {});
+      if (uploaded.length) {
+        for (let i = 0; i < uploaded.length; i += 100) {
+          const chunk = uploaded.slice(i, i + 100).map(([path, content]) => ({
+            project_id: p.id,
+            user_id,
+            path,
+            content,
+            origin: "upload",
+          }));
+          const { error: fileError } = await db.from("project_files").insert(chunk);
+          if (fileError) throw fileError;
+        }
+      }
+
+
 
       // Primary subdomain, created in a pending state; provisioned below.
       await db.from("domains").insert({
@@ -622,5 +647,106 @@ export function useRebuildPreview() {
       qc.invalidateQueries({ queryKey: ["deployments", input.projectId] });
       qc.invalidateQueries({ queryKey: ["deployments", "all"] });
     },
+  });
+}
+
+/* ---------------- Project files (uploads + workspace edits) ---------------- */
+
+export interface ProjectFile {
+  id: string;
+  project_id: string;
+  path: string;
+  content: string;
+  origin: string;
+  updated_at: string;
+}
+
+export function useProjectFiles(projectId: string) {
+  return useQuery({
+    queryKey: ["project-files", projectId],
+    enabled: !!projectId,
+    queryFn: async (): Promise<ProjectFile[]> => {
+      const { data, error } = await db
+        .from("project_files")
+        .select("*")
+        .eq("project_id", projectId)
+        .order("path");
+      if (error) throw error;
+      return (data ?? []) as ProjectFile[];
+    },
+  });
+}
+
+/** Create or update a file (an overlay edit for repo-backed projects). */
+export function useSaveProjectFile() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: {
+      project_id: string;
+      path: string;
+      content: string;
+      origin?: string;
+    }) => {
+      const user_id = await currentUserId();
+      const { data, error } = await db
+        .from("project_files")
+        .upsert(
+          {
+            project_id: input.project_id,
+            user_id,
+            path: input.path,
+            content: input.content,
+            origin: input.origin ?? "edit",
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "project_id,path" },
+        )
+        .select()
+        .single();
+      if (error) throw error;
+      return data as ProjectFile;
+    },
+    onSuccess: (_d, input) =>
+      qc.invalidateQueries({ queryKey: ["project-files", input.project_id] }),
+  });
+}
+
+export function useDeleteProjectFile() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { id: string; project_id: string }) => {
+      const { error } = await db.from("project_files").delete().eq("id", input.id);
+      if (error) throw error;
+    },
+    onSuccess: (_d, input) =>
+      qc.invalidateQueries({ queryKey: ["project-files", input.project_id] }),
+  });
+}
+
+/** Upload a fresh set of files into an existing project. */
+export function useUploadProjectFiles() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { project_id: string; files: Record<string, string> }) => {
+      const user_id = await currentUserId();
+      const entries = Object.entries(input.files);
+      for (let i = 0; i < entries.length; i += 100) {
+        const chunk = entries.slice(i, i + 100).map(([path, content]) => ({
+          project_id: input.project_id,
+          user_id,
+          path,
+          content,
+          origin: "upload",
+          updated_at: new Date().toISOString(),
+        }));
+        const { error } = await db
+          .from("project_files")
+          .upsert(chunk, { onConflict: "project_id,path" });
+        if (error) throw error;
+      }
+      return entries.length;
+    },
+    onSuccess: (_d, input) =>
+      qc.invalidateQueries({ queryKey: ["project-files", input.project_id] }),
   });
 }

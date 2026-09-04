@@ -53,16 +53,35 @@ export const rebuildPreview = createServerFn({ method: "POST" })
     }
     Object.assign(env, data.envOverrides);
 
-    const { buildRepoPreview } = await import("@/lib/preview.server");
-    const result = await buildRepoPreview({
-      repositoryUrl: project.repository_url,
-      repositoryName: project.repository_name,
-      branch: data.branch ?? project.branch ?? "main",
-      projectName: project.name,
-      framework: project.framework,
-      env,
-      path: data.path ?? "/",
-    });
+    // Workspace edits / uploaded files live in project_files.
+    const { data: fileRows } = await supabase
+      .from("project_files")
+      .select("path, content")
+      .eq("project_id", project.id);
+    const fileMap: Record<string, string> = {};
+    for (const row of fileRows ?? []) fileMap[row.path] = row.content;
+
+    const { buildRepoPreview, buildUploadPreview } = await import("@/lib/preview.server");
+    const result =
+      project.source_type === "upload"
+        ? await buildUploadPreview({
+            projectName: project.name,
+            framework: project.framework,
+            env,
+            files: fileMap,
+            path: data.path ?? "/",
+          })
+        : await buildRepoPreview({
+            repositoryUrl: project.repository_url,
+            repositoryName: project.repository_name,
+            branch: data.branch ?? project.branch ?? "main",
+            projectName: project.name,
+            framework: project.framework,
+            env,
+            path: data.path ?? "/",
+            overlay: fileMap,
+          });
+
 
     const logs = [
       `→ Fetching ${project.repository_name}@${data.branch ?? project.branch ?? "main"}`,

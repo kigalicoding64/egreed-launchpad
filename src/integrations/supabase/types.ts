@@ -248,6 +248,47 @@ export type Database = {
         }
         Relationships: []
       }
+      project_files: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          origin: string
+          path: string
+          project_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content?: string
+          created_at?: string
+          id?: string
+          origin?: string
+          path: string
+          project_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          origin?: string
+          path?: string
+          project_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_files_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
           auto_deploy: boolean
@@ -260,6 +301,7 @@ export type Database = {
           name: string
           repository_name: string
           repository_url: string
+          source_type: string
           status: Database["public"]["Enums"]["project_status"]
           updated_at: string
           user_id: string
@@ -275,6 +317,7 @@ export type Database = {
           name: string
           repository_name: string
           repository_url: string
+          source_type?: string
           status?: Database["public"]["Enums"]["project_status"]
           updated_at?: string
           user_id: string
@@ -290,6 +333,7 @@ export type Database = {
           name?: string
           repository_name?: string
           repository_url?: string
+          source_type?: string
           status?: Database["public"]["Enums"]["project_status"]
           updated_at?: string
           user_id?: string

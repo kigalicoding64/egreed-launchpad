@@ -272,8 +272,11 @@ export async function buildRepoPreview(opts: {
   env: Record<string, string>;
   /** In-app path to render, e.g. "/about". Defaults to "/". */
   path?: string;
+  /** Edited files from the workspace editor, keyed by repo-relative path. */
+  overlay?: Record<string, string>;
 }): Promise<PreviewResult> {
   const warnings: string[] = [];
+  const overlay = opts.overlay ?? {};
   const ref = parseRepo(opts.repositoryUrl, opts.repositoryName);
   if (!ref) throw new Error("Could not determine the GitHub owner/repo for this project.");
 
@@ -292,18 +295,32 @@ export async function buildRepoPreview(opts: {
   const sha = commit.sha;
   const envTag = envScriptTag(opts.env);
   const requested = normalisePath(opts.path);
+  const read = async (p: string) =>
+    Object.prototype.hasOwnProperty.call(overlay, p) ? overlay[p] : await rawFile(ref, sha, p);
+
+  if (Object.keys(overlay).length) {
+    warnings.push(
+      `${Object.keys(overlay).length} workspace edit(s) applied on top of the repository for this preview.`,
+    );
+  }
 
   // Full file listing — used for route discovery and path resolution.
   const tree = await ghJson<{ tree: { path: string; type: string }[] }>(
     `${GH_API}/repos/${ref.owner}/${ref.repo}/git/trees/${sha}?recursive=1`,
   );
-  const files = (tree?.tree ?? []).filter((t) => t.type === "blob").map((t) => t.path);
+  const files = Array.from(
+    new Set([
+      ...(tree?.tree ?? []).filter((t) => t.type === "blob").map((t) => t.path),
+      ...Object.keys(overlay),
+    ]),
+  );
 
   // 1. Try to serve a real static entry point from the repo.
   for (const path of ENTRY_CANDIDATES) {
     if (files.length && !files.includes(path)) continue;
-    const entryHtml = await rawFile(ref, sha, path);
+    const entryHtml = await read(path);
     if (!entryHtml) continue;
+
 
     const dir = path.includes("/") ? path.slice(0, path.lastIndexOf("/")) : "";
     const base = rawBase(ref, sha, dir);
@@ -331,7 +348,7 @@ export async function buildRepoPreview(opts: {
       for (const c of candidates) {
         const full = `${prefix}${c}`;
         if (files.length && !files.includes(full)) continue;
-        const body = await rawFile(ref, sha, full);
+        const body = await read(full);
         if (body) {
           found = full;
           html = body;
@@ -383,7 +400,7 @@ export async function buildRepoPreview(opts: {
   );
 
   const readme =
-    (await rawFile(ref, sha, "README.md")) ?? (await rawFile(ref, sha, "readme.md")) ?? null;
+    (await read("README.md")) ?? (await read("readme.md")) ?? null;
 
   const topLevel = files
     .filter((p) => !p.includes("/"))
@@ -414,6 +431,160 @@ ${readme ? renderMarkdown(readme) : "<p>No README found in this repository.</p>"
     commitAuthor: commit.commit.author?.name ?? null,
     commitDate: commit.commit.author?.date ?? null,
     source: "repository",
+    entryPath: null,
+    path: "/",
+    routes: ["/"],
+    warnings,
+  };
+}
+
+/* ------------------------------------------------------------------ *
+ * Uploaded-project previews (ZIP / folder uploads, no repository)
+ * ------------------------------------------------------------------ */
+
+function resolveRel(from: string, href: string) {
+  const dir = from.includes("/") ? from.slice(0, from.lastIndexOf("/")) : "";
+  const parts = (dir ? `${dir}/${href}` : href).split("/");
+  const out: string[] = [];
+  for (const part of parts) {
+    if (!part || part === ".") continue;
+    if (part === "..") out.pop();
+    else out.push(part);
+  }
+  return out.join("/");
+}
+
+/** Inline same-project stylesheets and scripts so the frame is self-contained. */
+function inlineAssets(html: string, entry: string, files: Record<string, string>) {
+  let out = html.replace(
+    /<link\b[^>]*rel=["']?stylesheet["']?[^>]*>/gi,
+    (tag) => {
+      const m = tag.match(/href=["']([^"']+)["']/i);
+      if (!m || /^(https?:)?\/\//i.test(m[1])) return tag;
+      const css = files[resolveRel(entry, m[1].split("?")[0])];
+      return css === undefined ? tag : `<style>${css}</style>`;
+    },
+  );
+  out = out.replace(/<script\b([^>]*)><\/script>/gi, (tag, attrs: string) => {
+    const m = attrs.match(/src=["']([^"']+)["']/i);
+    if (!m || /^(https?:)?\/\//i.test(m[1])) return tag;
+    const js = files[resolveRel(entry, m[1].split("?")[0])];
+    if (js === undefined) return tag;
+    const type = /type=["']module["']/i.test(attrs) ? ' type="module"' : "";
+    return `<script${type}>${js.replace(/<\/script>/gi, "<\\/script>")}</script>`;
+  });
+  return out;
+}
+
+const UPLOAD_ENTRY_DIRS = ["", "public/", "dist/", "build/", "src/", "app/"];
+
+/** Build a preview document from files the user uploaded (ZIP or folder). */
+export async function buildUploadPreview(opts: {
+  projectName: string;
+  framework: string;
+  env: Record<string, string>;
+  files: Record<string, string>;
+  path?: string;
+}): Promise<PreviewResult> {
+  const warnings: string[] = [];
+  const files = opts.files;
+  const paths = Object.keys(files);
+  const envTag = envScriptTag(opts.env);
+  const requested = normalisePath(opts.path);
+
+  if (!paths.length) {
+    throw new Error("This project has no uploaded files yet. Upload a ZIP or folder first.");
+  }
+
+  let entry: string | null = null;
+  for (const dir of UPLOAD_ENTRY_DIRS) {
+    if (files[`${dir}index.html`] !== undefined) {
+      entry = `${dir}index.html`;
+      break;
+    }
+  }
+  if (!entry) entry = paths.find((p) => p.endsWith(".html")) ?? null;
+
+  if (entry) {
+    const dir = entry.includes("/") ? entry.slice(0, entry.lastIndexOf("/")) : "";
+    const prefix = dir ? `${dir}/` : "";
+    const routes = Array.from(
+      new Set(
+        paths
+          .filter((f) => f.endsWith(".html") && (!prefix || f.startsWith(prefix)))
+          .map((f) => fileToRoute(f.slice(prefix.length))),
+      ),
+    ).sort((a, b) => (a === "/" ? -1 : b === "/" ? 1 : a.localeCompare(b)));
+
+    let served = entry;
+    if (requested !== "/") {
+      const rel = requested.replace(/^\//, "").replace(/\/$/, "");
+      const candidate = [`${prefix}${rel}`, `${prefix}${rel}.html`, `${prefix}${rel}/index.html`]
+        .filter((c) => c.endsWith(".html"))
+        .find((c) => files[c] !== undefined);
+      if (candidate) served = candidate;
+      else
+        warnings.push(
+          `No uploaded file matched ${requested} — served ${entry} as a single-page-app fallback.`,
+        );
+    }
+
+    const doc = inlineAssets(files[served], served, files);
+    const nav = navBridge("/", requested);
+    const spaInit =
+      served === entry && requested !== "/"
+        ? `<script>try{history.replaceState({}, '', ${JSON.stringify(requested)})}catch(e){}</script>`
+        : "";
+    const head = `\n${envTag}${spaInit}`;
+    const withEnv = /<head(\s[^>]*)?>/i.test(doc)
+      ? doc.replace(/<head(\s[^>]*)?>/i, (m) => `${m}${head}`)
+      : `<head>${head}</head>${doc}`;
+
+    return {
+      html: withEnv.includes("</body>")
+        ? withEnv.replace(/<\/body>/i, `${nav}</body>`)
+        : withEnv + nav,
+      commitHash: null,
+      commitMessage: "Uploaded files",
+      commitAuthor: null,
+      commitDate: null,
+      source: "upload",
+      entryPath: served,
+      path: requested,
+      routes: routes.length ? routes : ["/"],
+      warnings,
+    };
+  }
+
+  warnings.push(
+    "No index.html was found in the upload, so the project's README and file list are shown instead.",
+  );
+  const readme = files["README.md"] ?? files["readme.md"] ?? null;
+  const list = paths
+    .slice(0, 60)
+    .map((p) => `<li><code>${escapeHtml(p)}</code></li>`)
+    .join("");
+  const body = `
+<div class="badge">● Uploaded project preview</div>
+<h1>${escapeHtml(opts.projectName)}</h1>
+<div class="meta">
+  <div><b>Source</b> Uploaded files (${paths.length})</div>
+  <div><b>Framework</b> ${escapeHtml(opts.framework)}</div>
+  <div><b>Preview env vars</b> ${Object.keys(opts.env).length} injected as <code>window.__ENV__</code></div>
+</div>
+<hr>
+${readme ? renderMarkdown(readme) : "<p>No README included in this upload.</p>"}
+<hr>
+<h3>Files</h3>
+<ul>${list}</ul>`;
+
+  return {
+    html: shell(`${opts.projectName} — preview`, body, envTag),
+    commitHash: null,
+    commitMessage: "Uploaded files",
+    commitAuthor: null,
+    commitDate: null,
+    source: "upload",
     entryPath: null,
     path: "/",
     routes: ["/"],
