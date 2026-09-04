@@ -66,6 +66,8 @@ export interface Project {
   status: ProjectStatus;
   domain: string | null;
   auto_deploy: boolean;
+  source_type?: "github" | "upload" | string;
+
   created_at: string;
   updated_at: string;
 }
