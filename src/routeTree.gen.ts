@@ -24,6 +24,7 @@ import { Route as AuthenticatedDeploymentsRouteImport } from './routes/_authenti
 import { Route as AuthenticatedDeployRouteImport } from './routes/_authenticated/deploy'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedProjectsIndexRouteImport } from './routes/_authenticated/projects.index'
+import { Route as AuthenticatedWorkspaceIdRouteImport } from './routes/_authenticated/workspace.$id'
 import { Route as AuthenticatedProjectsIdRouteImport } from './routes/_authenticated/projects.$id'
 import { Route as ApiPublicWebhooksGithubRouteImport } from './routes/api/public/webhooks/github'
 import { Route as ApiPublicHooksSslRenewRouteImport } from './routes/api/public/hooks/ssl-renew'
@@ -105,6 +106,12 @@ const AuthenticatedProjectsIndexRoute =
     path: '/projects/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedWorkspaceIdRoute =
+  AuthenticatedWorkspaceIdRouteImport.update({
+    id: '/workspace/$id',
+    path: '/workspace/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedProjectsIdRoute = AuthenticatedProjectsIdRouteImport.update({
   id: '/projects/$id',
   path: '/projects/$id',
@@ -141,6 +148,7 @@ export interface FileRoutesByFullPath {
   '/ssl': typeof AuthenticatedSslRoute
   '/hosted/$subdomain': typeof HostedSubdomainRoute
   '/projects/$id': typeof AuthenticatedProjectsIdRoute
+  '/workspace/$id': typeof AuthenticatedWorkspaceIdRoute
   '/projects/': typeof AuthenticatedProjectsIndexRoute
   '/api/public/hooks/edge-sync': typeof ApiPublicHooksEdgeSyncRoute
   '/api/public/hooks/ssl-renew': typeof ApiPublicHooksSslRenewRoute
@@ -161,6 +169,7 @@ export interface FileRoutesByTo {
   '/ssl': typeof AuthenticatedSslRoute
   '/hosted/$subdomain': typeof HostedSubdomainRoute
   '/projects/$id': typeof AuthenticatedProjectsIdRoute
+  '/workspace/$id': typeof AuthenticatedWorkspaceIdRoute
   '/projects': typeof AuthenticatedProjectsIndexRoute
   '/api/public/hooks/edge-sync': typeof ApiPublicHooksEdgeSyncRoute
   '/api/public/hooks/ssl-renew': typeof ApiPublicHooksSslRenewRoute
@@ -183,6 +192,7 @@ export interface FileRoutesById {
   '/_authenticated/ssl': typeof AuthenticatedSslRoute
   '/hosted/$subdomain': typeof HostedSubdomainRoute
   '/_authenticated/projects/$id': typeof AuthenticatedProjectsIdRoute
+  '/_authenticated/workspace/$id': typeof AuthenticatedWorkspaceIdRoute
   '/_authenticated/projects/': typeof AuthenticatedProjectsIndexRoute
   '/api/public/hooks/edge-sync': typeof ApiPublicHooksEdgeSyncRoute
   '/api/public/hooks/ssl-renew': typeof ApiPublicHooksSslRenewRoute
@@ -205,6 +215,7 @@ export interface FileRouteTypes {
     | '/ssl'
     | '/hosted/$subdomain'
     | '/projects/$id'
+    | '/workspace/$id'
     | '/projects/'
     | '/api/public/hooks/edge-sync'
     | '/api/public/hooks/ssl-renew'
@@ -225,6 +236,7 @@ export interface FileRouteTypes {
     | '/ssl'
     | '/hosted/$subdomain'
     | '/projects/$id'
+    | '/workspace/$id'
     | '/projects'
     | '/api/public/hooks/edge-sync'
     | '/api/public/hooks/ssl-renew'
@@ -246,6 +258,7 @@ export interface FileRouteTypes {
     | '/_authenticated/ssl'
     | '/hosted/$subdomain'
     | '/_authenticated/projects/$id'
+    | '/_authenticated/workspace/$id'
     | '/_authenticated/projects/'
     | '/api/public/hooks/edge-sync'
     | '/api/public/hooks/ssl-renew'
@@ -373,6 +386,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProjectsIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/workspace/$id': {
+      id: '/_authenticated/workspace/$id'
+      path: '/workspace/$id'
+      fullPath: '/workspace/$id'
+      preLoaderRoute: typeof AuthenticatedWorkspaceIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/projects/$id': {
       id: '/_authenticated/projects/$id'
       path: '/projects/$id'
@@ -412,6 +432,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedSslRoute: typeof AuthenticatedSslRoute
   AuthenticatedProjectsIdRoute: typeof AuthenticatedProjectsIdRoute
+  AuthenticatedWorkspaceIdRoute: typeof AuthenticatedWorkspaceIdRoute
   AuthenticatedProjectsIndexRoute: typeof AuthenticatedProjectsIndexRoute
 }
 
@@ -423,6 +444,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedSslRoute: AuthenticatedSslRoute,
   AuthenticatedProjectsIdRoute: AuthenticatedProjectsIdRoute,
+  AuthenticatedWorkspaceIdRoute: AuthenticatedWorkspaceIdRoute,
   AuthenticatedProjectsIndexRoute: AuthenticatedProjectsIndexRoute,
 }
 
