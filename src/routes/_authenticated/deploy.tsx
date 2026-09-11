@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   GitBranch,
   Github,
@@ -10,6 +10,9 @@ import {
   Check,
   ArrowRight,
   ArrowLeft,
+  Link2 as LinkIcon,
+  UploadCloud,
+  FolderUp,
 } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/DashboardShell";
 import { Button } from "@/components/ui/button";
@@ -61,6 +64,8 @@ function DeployWizard() {
     null,
   );
   const [parsing, setParsing] = useState(false);
+  const zipInputRef = useRef<HTMLInputElement | null>(null);
+  const folderInputRef = useRef<HTMLInputElement | null>(null);
 
   // configure state
   const [name, setName] = useState("");
@@ -394,10 +399,12 @@ function DeployWizard() {
                 onClick={() => setStep(1)}
                 className="inline-flex items-center gap-1 hover:text-foreground"
               >
-                <ArrowLeft className="h-4 w-4" /> Repositories
+                <ArrowLeft className="h-4 w-4" /> {upload ? "Source" : "Repositories"}
               </button>
               <span>/</span>
-              <span className="font-mono text-foreground">{repo?.name}</span>
+              <span className="font-mono text-foreground">
+                {repo?.name ?? `${Object.keys(upload?.files ?? {}).length} uploaded files`}
+              </span>
             </div>
 
             <h3 className="font-semibold text-foreground">Configure your project</h3>
@@ -496,7 +503,7 @@ function DeployWizard() {
 }
 
 function Stepper({ current, connected }: { current: number; connected: boolean }) {
-  const steps = ["Connect GitHub", "Select Repository", "Configure & Deploy"];
+  const steps = ["Choose source", "Select project", "Configure & Deploy"];
   return (
     <div className="flex items-center">
       {steps.map((label, i) => {
