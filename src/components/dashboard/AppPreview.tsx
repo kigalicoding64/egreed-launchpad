@@ -53,7 +53,14 @@ interface PreviewBuild {
 
 type ConsoleLine = { id: number; level: string; text: string };
 
-export function AppPreview({ project }: { project: Project }) {
+export function AppPreview({
+  project,
+  reloadToken = 0,
+}: {
+  project: Project;
+  /** Bump to force a fresh build (used by the workspace editor after saving). */
+  reloadToken?: number;
+}) {
   const [device, setDevice] = useState<DeviceKey>("desktop");
   const [showEnv, setShowEnv] = useState(false);
   const [showConsole, setShowConsole] = useState(false);
@@ -186,6 +193,13 @@ export function AppPreview({ project }: { project: Project }) {
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
   }, [goTo, cursor]);
+
+  // Rebuild whenever the workspace signals a saved change.
+  useEffect(() => {
+    if (!reloadToken) return;
+    run({ path: currentPath, pushHistory: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reloadToken]);
 
   // Build once when the tab first mounts.
   useEffect(() => {
