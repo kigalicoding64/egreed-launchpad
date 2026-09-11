@@ -183,96 +183,210 @@ function DeployWizard() {
           <div className="flex justify-center py-16">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
-        ) : effectiveStep === 0 ? (
+        ) : effectiveStep < 2 ? (
           <Card>
-            <div className="flex flex-col items-center py-6 text-center">
-              <span className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-foreground text-background">
-                <Github className="h-7 w-7" />
-              </span>
-              <h3 className="mt-5 text-lg font-semibold text-foreground">Connect GitHub</h3>
-              <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-                Authorize the EGREED Deploy GitHub App to access your repositories.
-              </p>
-              <div className="mt-6 w-full max-w-sm space-y-3 text-left">
-                <Label htmlFor="ghuser">GitHub username or organization</Label>
-                <Input
-                  id="ghuser"
-                  value={ghUser}
-                  onChange={(e) => setGhUser(e.target.value)}
-                  placeholder="egreed-labs"
-                />
-                <Button
-                  variant="hero"
-                  className="w-full"
-                  onClick={handleConnect}
-                  disabled={connect.isPending || !ghUser.trim()}
-                >
-                  {connect.isPending ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Github className="h-4 w-4" />
+            <div className="mb-5 grid grid-cols-3 gap-1 rounded-xl border border-border bg-secondary/30 p-1">
+              {(
+                [
+                  ["connected", "Connected account", Github],
+                  ["url", "Repository URL", LinkIcon],
+                  ["upload", "Upload files", UploadCloud],
+                ] as const
+              ).map(([key, label, Icon]) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setSourceMode(key)}
+                  className={cn(
+                    "inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-medium transition-colors sm:text-sm",
+                    sourceMode === key
+                      ? "bg-primary/15 text-primary"
+                      : "text-muted-foreground hover:text-foreground",
                   )}
-                  Authorize & connect
-                </Button>
-              </div>
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                  {label}
+                </button>
+              ))}
             </div>
-          </Card>
-        ) : effectiveStep === 1 ? (
-          <Card>
-            <div className="mb-4 flex items-center justify-between">
-              <div>
-                <h3 className="font-semibold text-foreground">Select a repository</h3>
-                <p className="text-sm text-muted-foreground">
-                  Connected as{" "}
-                  <span className="font-mono text-foreground">@{gh?.github_username}</span>
+
+            {sourceMode === "connected" && !gh && (
+              <div className="flex flex-col items-center py-6 text-center">
+                <span className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-foreground text-background">
+                  <Github className="h-7 w-7" />
+                </span>
+                <h3 className="mt-5 text-lg font-semibold text-foreground">Connect GitHub</h3>
+                <p className="mt-1 max-w-sm text-sm text-muted-foreground">
+                  Authorize the EGREED Deploy GitHub App to access your repositories — or upload
+                  files instead.
                 </p>
-              </div>
-            </div>
-            <div className="relative mb-4">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search repositories…"
-                className="pl-9"
-              />
-            </div>
-            <div className="space-y-2">
-              {filtered.map((r) => {
-                const fm = frameworkMeta(r.framework);
-                return (
-                  <button
-                    key={r.fullName}
-                    onClick={() => pickRepo(r)}
-                    className="flex w-full items-center gap-3 rounded-xl border border-border bg-secondary/30 p-3.5 text-left transition-colors hover:border-primary/40 hover:bg-secondary/60"
+                <div className="mt-6 w-full max-w-sm space-y-3 text-left">
+                  <Label htmlFor="ghuser">GitHub username or organization</Label>
+                  <Input
+                    id="ghuser"
+                    value={ghUser}
+                    onChange={(e) => setGhUser(e.target.value)}
+                    placeholder="egreed-labs"
+                  />
+                  <Button
+                    variant="hero"
+                    className="w-full"
+                    onClick={handleConnect}
+                    disabled={connect.isPending || !ghUser.trim()}
                   >
-                    <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-secondary text-foreground">
-                      <fm.icon className="h-4 w-4" />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="flex items-center gap-1.5 text-sm font-medium text-foreground">
-                        {r.name}
-                        {r.private && <Lock className="h-3 w-3 text-muted-foreground" />}
-                      </p>
-                      <p className="truncate text-xs text-muted-foreground">{r.description}</p>
-                    </div>
-                    <div className="hidden items-center gap-3 text-xs text-muted-foreground sm:flex">
-                      <span>{r.language}</span>
-                      <span className="flex items-center gap-1">
-                        <Star className="h-3 w-3" /> {r.stars}
-                      </span>
-                    </div>
-                    <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                  </button>
-                );
-              })}
-              {filtered.length === 0 && (
-                <p className="py-8 text-center text-sm text-muted-foreground">
-                  No repositories match &ldquo;{search}&rdquo;.
+                    {connect.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Github className="h-4 w-4" />
+                    )}
+                    Authorize &amp; connect
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {sourceMode === "connected" && gh && (
+              <>
+                <div className="mb-4">
+                  <h3 className="font-semibold text-foreground">Select a repository</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Connected as{" "}
+                    <span className="font-mono text-foreground">@{gh?.github_username}</span>
+                  </p>
+                </div>
+                <div className="relative mb-4">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Search repositories…"
+                    className="pl-9"
+                  />
+                </div>
+                <div className="space-y-2">
+                  {filtered.map((r) => {
+                    const fm = frameworkMeta(r.framework);
+                    return (
+                      <button
+                        key={r.fullName}
+                        onClick={() => pickRepo(r)}
+                        className="flex w-full items-center gap-3 rounded-xl border border-border bg-secondary/30 p-3.5 text-left transition-colors hover:border-primary/40 hover:bg-secondary/60"
+                      >
+                        <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-secondary text-foreground">
+                          <fm.icon className="h-4 w-4" />
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+                            {r.name}
+                            {r.private && <Lock className="h-3 w-3 text-muted-foreground" />}
+                          </p>
+                          <p className="truncate text-xs text-muted-foreground">{r.description}</p>
+                        </div>
+                        <div className="hidden items-center gap-3 text-xs text-muted-foreground sm:flex">
+                          <span>{r.language}</span>
+                          <span className="flex items-center gap-1">
+                            <Star className="h-3 w-3" /> {r.stars}
+                          </span>
+                        </div>
+                        <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                      </button>
+                    );
+                  })}
+                  {filtered.length === 0 && (
+                    <p className="py-8 text-center text-sm text-muted-foreground">
+                      No repositories match &ldquo;{search}&rdquo;.
+                    </p>
+                  )}
+                </div>
+              </>
+            )}
+
+            {sourceMode === "url" && (
+              <div className="space-y-3">
+                <h3 className="font-semibold text-foreground">Deploy any public repository</h3>
+                <p className="text-sm text-muted-foreground">
+                  Paste a GitHub URL — we read the latest commit straight from the repository.
                 </p>
-              )}
-            </div>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <Input
+                    value={repoUrl}
+                    onChange={(e) => setRepoUrl(e.target.value)}
+                    placeholder="https://github.com/owner/repo"
+                    className="font-mono text-sm"
+                  />
+                  <Button variant="hero" onClick={useRepoUrl} disabled={!repoUrl.trim()}>
+                    Continue <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {sourceMode === "upload" && (
+              <div className="space-y-4">
+                <div>
+                  <h3 className="font-semibold text-foreground">Upload your project</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Drop in a ZIP archive or pick a whole folder — no repository needed. You can
+                    preview it before any domain is attached.
+                  </p>
+                </div>
+                <div
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    void handleFiles(e.dataTransfer.files);
+                  }}
+                  className="rounded-2xl border border-dashed border-border bg-secondary/20 p-8 text-center"
+                >
+                  <UploadCloud className="mx-auto h-8 w-8 text-muted-foreground" />
+                  <p className="mt-3 text-sm text-foreground">Drag &amp; drop your ZIP or folder</p>
+                  <p className="text-xs text-muted-foreground">
+                    HTML, CSS, JS and other text files up to 8 MB total
+                  </p>
+                  <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+                    <Button
+                      variant="outline"
+                      disabled={parsing}
+                      onClick={() => zipInputRef.current?.click()}
+                    >
+                      {parsing ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <UploadCloud className="h-4 w-4" />
+                      )}
+                      Choose ZIP / files
+                    </Button>
+                    <Button
+                      variant="outline"
+                      disabled={parsing}
+                      onClick={() => folderInputRef.current?.click()}
+                    >
+                      <FolderUp className="h-4 w-4" /> Choose folder
+                    </Button>
+                  </div>
+                  <input
+                    ref={zipInputRef}
+                    type="file"
+                    multiple
+                    accept=".zip,text/*,.html,.css,.js,.json,.md,.svg"
+                    className="hidden"
+                    onChange={(e) => void handleFiles(e.target.files)}
+                  />
+                  <input
+                    ref={folderInputRef}
+                    type="file"
+                    multiple
+                    // @ts-expect-error non-standard but widely supported folder picker
+                    webkitdirectory=""
+                    directory=""
+                    className="hidden"
+                    onChange={(e) => void handleFiles(e.target.files)}
+                  />
+                </div>
+              </div>
+            )}
           </Card>
+
         ) : (
           <Card>
             <div className="mb-5 flex items-center gap-2 text-sm text-muted-foreground">
