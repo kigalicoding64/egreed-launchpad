@@ -140,6 +140,33 @@ function DeployWizard() {
     }
   }
 
+  async function handleDeploy() {
+    if (!repo && !upload) return;
+    try {
+      const { project, domainProvisioned } = await deploy.mutateAsync({
+        name,
+        repository_name: repo ? repo.fullName : `upload/${slugify(name) || "app"}`,
+        repository_url: repo ? `https://github.com/${repo.fullName}` : "",
+        framework,
+        branch: repo ? branch : "upload",
+        build_command: buildCmd,
+        source_type: upload ? "upload" : "github",
+        files: upload?.files,
+      });
+      if (domainProvisioned) {
+        toast.success(`Deployed — ${project.domain} is provisioning DNS + SSL`);
+      } else {
+        toast.success(`Deployed to ${project.domain}`, {
+          description: "Domain queued — track DNS + SSL on the Certificates page.",
+        });
+      }
+      navigate({ to: "/projects/$id", params: { id: project.id } });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Deployment failed");
+    }
+  }
+
+
   const filtered = SAMPLE_REPOS.filter((r) =>
     r.name.toLowerCase().includes(search.toLowerCase()),
   );
