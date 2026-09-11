@@ -55,6 +55,12 @@ function DeployWizard() {
   const [ghUser, setGhUser] = useState("");
   const [search, setSearch] = useState("");
   const [repo, setRepo] = useState<SampleRepo | null>(null);
+  const [sourceMode, setSourceMode] = useState<"connected" | "url" | "upload">("connected");
+  const [repoUrl, setRepoUrl] = useState("");
+  const [upload, setUpload] = useState<{ files: Record<string, string>; skipped: string[] } | null>(
+    null,
+  );
+  const [parsing, setParsing] = useState(false);
 
   // configure state
   const [name, setName] = useState("");
@@ -62,7 +68,8 @@ function DeployWizard() {
   const [branch, setBranch] = useState("main");
   const [buildCmd, setBuildCmd] = useState("");
 
-  const effectiveStep: Step = gh && step === 0 ? 1 : step;
+  const isUpload = sourceMode === "upload";
+  const effectiveStep: Step = (gh || isUpload) && step === 0 ? 1 : step;
 
   async function handleConnect() {
     if (!ghUser.trim()) return;
@@ -77,39 +84,66 @@ function DeployWizard() {
 
   function pickRepo(r: SampleRepo) {
     setRepo(r);
+    setUpload(null);
     setName(r.name);
     setFramework(r.framework);
     setBuildCmd(frameworkMeta(r.framework).buildCommand);
     setStep(2);
   }
 
-  async function handleDeploy() {
-    if (!repo) return;
+  function useRepoUrl() {
+    const m = repoUrl.trim().match(/github\.com[/:]([\w.-]+)\/([\w.-]+?)(?:\.git)?\/?$/i);
+    if (!m) {
+      toast.error("Enter a full GitHub repository URL, e.g. https://github.com/owner/repo");
+      return;
+    }
+    pickRepo({
+      name: m[2],
+      fullName: `${m[1]}/${m[2]}`,
+      description: "Public repository added by URL",
+      framework: "static",
+      language: "—",
+      private: false,
+      updated: "just now",
+      stars: 0,
+    });
+  }
+
+  async function handleFiles(list: FileList | null) {
+    if (!list || !list.length) return;
+    setParsing(true);
     try {
-      const { project, domainProvisioned } = await deploy.mutateAsync({
-        name,
-        repository_name: repo.fullName,
-        repository_url: `https://github.com/${repo.fullName}`,
-        framework,
-        branch,
-        build_command: buildCmd,
-      });
-      if (domainProvisioned) {
-        toast.success(`Deployed — ${project.domain} is provisioning DNS + SSL`);
-      } else {
-        toast.success(`Deployed to ${project.domain}`, {
-          description: "Domain queued — track DNS + SSL on the Certificates page.",
-        });
+      const { parseUpload, detectFramework } = await import("@/lib/upload");
+      const parsed = await parseUpload(list);
+      const count = Object.keys(parsed.files).length;
+      if (!count) {
+        toast.error("No readable project files found in that upload.");
+        return;
       }
-      navigate({ to: "/projects/$id", params: { id: project.id } });
+      const guessed = detectFramework(parsed.files);
+      setUpload({ files: parsed.files, skipped: parsed.skipped });
+      setRepo(null);
+      const first = list[0] as File & { webkitRelativePath?: string };
+      const guessName =
+        (first.webkitRelativePath || "").split("/")[0] ||
+        first.name.replace(/\.zip$/i, "") ||
+        "uploaded-app";
+      setName(guessName);
+      setFramework(guessed);
+      setBuildCmd(frameworkMeta(guessed).buildCommand);
+      toast.success(`${count} files ready to deploy`);
+      setStep(2);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Deployment failed");
+      toast.error(e instanceof Error ? e.message : "Could not read that upload");
+    } finally {
+      setParsing(false);
     }
   }
 
   const filtered = SAMPLE_REPOS.filter((r) =>
     r.name.toLowerCase().includes(search.toLowerCase()),
   );
+
 
   return (
     <div className="mx-auto max-w-3xl">
