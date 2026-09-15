@@ -62,6 +62,10 @@ export interface Project {
   repository_url: string;
   framework: string;
   build_command: string | null;
+  install_command?: string | null;
+  start_command?: string | null;
+  output_dir?: string | null;
+
   branch: string;
   status: ProjectStatus;
   domain: string | null;
