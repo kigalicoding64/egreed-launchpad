@@ -17,6 +17,7 @@ import {
   Save,
 } from "lucide-react";
 import { StatusBadge } from "@/components/brand/StatusBadge";
+import { Code2 } from "lucide-react";
 import { AppPreview } from "@/components/dashboard/AppPreview";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
