@@ -17,6 +17,7 @@ import {
   Save,
 } from "lucide-react";
 import { StatusBadge } from "@/components/brand/StatusBadge";
+import { Code2 } from "lucide-react";
 import { AppPreview } from "@/components/dashboard/AppPreview";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -135,6 +136,12 @@ function ProjectDetail() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="outline" asChild>
+            <Link to="/workspace/$id" params={{ id: project.id }}>
+              <Code2 className="h-4 w-4" /> Open workspace
+            </Link>
+          </Button>
+
           <Button
             variant="outline"
             onClick={() =>
