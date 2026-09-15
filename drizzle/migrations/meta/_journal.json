@@ -8,6 +8,13 @@
       "when": 1788528928419,
       "tag": "0000_project_files_and_source_type",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1789505203817,
+      "tag": "0001_project_build_plan_columns",
+      "breakpoints": true
     }
   ]
 }

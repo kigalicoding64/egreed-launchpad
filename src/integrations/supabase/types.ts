@@ -298,10 +298,13 @@ export type Database = {
           domain: string | null
           framework: string
           id: string
+          install_command: string | null
           name: string
+          output_dir: string | null
           repository_name: string
           repository_url: string
           source_type: string
+          start_command: string | null
           status: Database["public"]["Enums"]["project_status"]
           updated_at: string
           user_id: string
@@ -314,10 +317,13 @@ export type Database = {
           domain?: string | null
           framework?: string
           id?: string
+          install_command?: string | null
           name: string
+          output_dir?: string | null
           repository_name: string
           repository_url: string
           source_type?: string
+          start_command?: string | null
           status?: Database["public"]["Enums"]["project_status"]
           updated_at?: string
           user_id: string
@@ -330,10 +336,13 @@ export type Database = {
           domain?: string | null
           framework?: string
           id?: string
+          install_command?: string | null
           name?: string
+          output_dir?: string | null
           repository_name?: string
           repository_url?: string
           source_type?: string
+          start_command?: string | null
           status?: Database["public"]["Enums"]["project_status"]
           updated_at?: string
           user_id?: string

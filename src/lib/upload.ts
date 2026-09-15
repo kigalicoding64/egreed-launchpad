@@ -85,11 +85,14 @@ export function detectFramework(files: Record<string, string>): string {
   const pkg = files["package.json"];
   if (pkg) {
     const lower = pkg.toLowerCase();
-    if (lower.includes('"next"')) return "next";
-    if (lower.includes('"vite"') || lower.includes('"react"')) return "vite";
-    if (lower.includes('"astro"')) return "astro";
+    if (lower.includes('"next"')) return "nextjs";
+    if (lower.includes('"vite"') || lower.includes('"react"')) return "react";
+    if (lower.includes('"astro"')) return "react";
     return "node";
   }
-  if (Object.keys(files).some((p) => p.endsWith("index.html"))) return "static";
+  if (files["requirements.txt"] || Object.keys(files).some((p) => p.endsWith(".py"))) {
+    return "python";
+  }
   return "static";
 }
+

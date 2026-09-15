@@ -62,6 +62,10 @@ export interface Project {
   repository_url: string;
   framework: string;
   build_command: string | null;
+  install_command?: string | null;
+  start_command?: string | null;
+  output_dir?: string | null;
+
   branch: string;
   status: ProjectStatus;
   domain: string | null;
@@ -127,6 +131,9 @@ export interface FrameworkMeta {
   label: string;
   icon: LucideIcon;
   buildCommand: string;
+  installCommand: string;
+  startCommand: string;
+  outputDir: string;
   detectFile: string;
 }
 
@@ -136,6 +143,9 @@ export const FRAMEWORKS: Record<string, FrameworkMeta> = {
     label: "Next.js",
     icon: Boxes,
     buildCommand: "next build",
+    installCommand: "npm install",
+    startCommand: "next start -p $PORT",
+    outputDir: ".next",
     detectFile: "next.config.js",
   },
   react: {
@@ -143,13 +153,19 @@ export const FRAMEWORKS: Record<string, FrameworkMeta> = {
     label: "React (Vite)",
     icon: Zap,
     buildCommand: "npm run build",
+    installCommand: "npm install",
+    startCommand: "serve -s dist -l $PORT",
+    outputDir: "dist",
     detectFile: "vite.config.ts",
   },
   node: {
     id: "node",
     label: "Node.js",
     icon: Server,
-    buildCommand: "npm start",
+    buildCommand: "npm run build --if-present",
+    installCommand: "npm install",
+    startCommand: "npm start",
+    outputDir: ".",
     detectFile: "server.js",
   },
   python: {
@@ -157,6 +173,9 @@ export const FRAMEWORKS: Record<string, FrameworkMeta> = {
     label: "Python",
     icon: FileCode2,
     buildCommand: "pip install -r requirements.txt",
+    installCommand: "python -m venv .venv && . .venv/bin/activate",
+    startCommand: "gunicorn app:app --bind 0.0.0.0:$PORT",
+    outputDir: ".",
     detectFile: "requirements.txt",
   },
   static: {
@@ -164,6 +183,9 @@ export const FRAMEWORKS: Record<string, FrameworkMeta> = {
     label: "Static HTML",
     icon: Globe,
     buildCommand: "—",
+    installCommand: "—",
+    startCommand: "serve . -l $PORT",
+    outputDir: ".",
     detectFile: "index.html",
   },
 };
@@ -171,6 +193,104 @@ export const FRAMEWORKS: Record<string, FrameworkMeta> = {
 export function frameworkMeta(id: string): FrameworkMeta {
   return FRAMEWORKS[id] ?? FRAMEWORKS.static;
 }
+
+/* ---------- Build plan ---------- */
+
+export interface BuildPlan {
+  framework: string;
+  installCommand: string;
+  buildCommand: string;
+  startCommand: string;
+  outputDir: string;
+  /** Short notes explaining how each value was detected. */
+  notes: string[];
+}
+
+/** Framework defaults, optionally overridden by stored project values. */
+export function buildPlanFor(
+  framework: string,
+  overrides?: {
+    build_command?: string | null;
+    install_command?: string | null;
+    start_command?: string | null;
+    output_dir?: string | null;
+  },
+): BuildPlan {
+  const fm = frameworkMeta(framework);
+  return {
+    framework: fm.id,
+    installCommand: overrides?.install_command || fm.installCommand,
+    buildCommand: overrides?.build_command || fm.buildCommand,
+    startCommand: overrides?.start_command || fm.startCommand,
+    outputDir: overrides?.output_dir || fm.outputDir,
+    notes: [],
+  };
+}
+
+/**
+ * Inspect uploaded/repository files and refine the framework defaults using the
+ * project's real package.json scripts when they exist.
+ */
+export function detectBuildPlan(
+  files: Record<string, string> | undefined,
+  framework: string,
+): BuildPlan {
+  const plan = buildPlanFor(framework);
+  const notes: string[] = [`Framework detected: ${frameworkMeta(framework).label}`];
+  const pkgRaw = files?.["package.json"];
+
+  if (pkgRaw) {
+    try {
+      const pkg = JSON.parse(pkgRaw) as {
+        scripts?: Record<string, string>;
+        packageManager?: string;
+      };
+      const scripts = pkg.scripts ?? {};
+      const pm = pkg.packageManager?.startsWith("pnpm")
+        ? "pnpm"
+        : pkg.packageManager?.startsWith("yarn")
+          ? "yarn"
+          : files?.["pnpm-lock.yaml"]
+            ? "pnpm"
+            : files?.["yarn.lock"]
+              ? "yarn"
+              : files?.["bun.lockb"]
+                ? "bun"
+                : "npm";
+      plan.installCommand = pm === "npm" ? "npm install" : `${pm} install`;
+      notes.push(`Package manager: ${pm} (from lockfile / package.json)`);
+      if (scripts.build) {
+        plan.buildCommand = `${pm} run build`;
+        notes.push(`Build script found: "${scripts.build}"`);
+      }
+      if (scripts.start) {
+        plan.startCommand = pm === "npm" ? "npm start" : `${pm} start`;
+        notes.push(`Start script found: "${scripts.start}"`);
+      } else if (scripts.preview) {
+        plan.startCommand = `${pm} run preview`;
+        notes.push(`No start script — using "preview".`);
+      }
+    } catch {
+      notes.push("package.json could not be parsed — using framework defaults.");
+    }
+  } else if (files) {
+    notes.push("No package.json — treating this as a static site.");
+  }
+
+  if (files) {
+    if (files["dist/index.html"] || files["vite.config.ts"] || files["vite.config.js"]) {
+      plan.outputDir = "dist";
+    } else if (files["next.config.js"] || files["next.config.mjs"]) {
+      plan.outputDir = ".next";
+    } else if (files["build/index.html"]) {
+      plan.outputDir = "build";
+    }
+  }
+
+  plan.notes = notes;
+  return plan;
+}
+
 
 /* ---------- Slug / subdomain ---------- */
 
