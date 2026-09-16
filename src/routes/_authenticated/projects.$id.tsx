@@ -15,6 +15,12 @@ import {
   Eye,
   EyeOff,
   Save,
+  Undo2,
+  ShieldAlert,
+  Sparkles,
+  Download,
+  CheckCircle2,
+  AlertTriangle,
 } from "lucide-react";
 import { StatusBadge } from "@/components/brand/StatusBadge";
 import { Code2 } from "lucide-react";
@@ -57,6 +63,8 @@ import {
   useProvisionDomain,
   useRefreshDomain,
   useRollback,
+  useRollbackToLastGood,
+  useEnvChecklist,
   useUpdateEnvVar,
 } from "@/lib/queries";
 import {
@@ -67,6 +75,7 @@ import {
   DNS_TARGET,
   frameworkMeta,
   buildLogsFor,
+  buildPlanFor,
   type EnvTarget,
   type Deployment,
 } from "@/lib/egreed";
@@ -167,6 +176,8 @@ function ProjectDetail() {
         </div>
       </div>
 
+      <RollbackBanner projectId={project.id} />
+
       <Tabs defaultValue="overview" className="mt-6">
         <TabsList className="w-full justify-start overflow-x-auto">
           <TabsTrigger value="overview">Overview</TabsTrigger>
@@ -214,11 +225,15 @@ function ProjectDetail() {
 /* ---------- Overview ---------- */
 function OverviewTab({ project }: { project: ReturnType<typeof useProject>["data"] & {} }) {
   const fm = frameworkMeta(project.framework);
+  const plan = buildPlanFor(project.framework, project);
   const rows = [
     { label: "Repository", value: project.repository_name, mono: true },
     { label: "Framework", value: fm.label },
     { label: "Branch", value: project.branch, mono: true },
-    { label: "Build command", value: project.build_command || fm.buildCommand, mono: true },
+    { label: "Install command", value: plan.installCommand, mono: true },
+    { label: "Build command", value: plan.buildCommand, mono: true },
+    { label: "Start command", value: plan.startCommand, mono: true },
+    { label: "Output directory", value: plan.outputDir, mono: true },
     { label: "Domain", value: project.domain ?? "—", mono: true },
     { label: "Created", value: format(new Date(project.created_at), "PPP") },
   ];
@@ -441,6 +456,8 @@ function EnvTab({ projectId }: { projectId: string }) {
           </Button>
         </div>
       </div>
+
+      <EnvChecklistPanel projectId={projectId} />
 
       <div className="overflow-hidden rounded-2xl border border-border bg-card">
         {isLoading ? (
@@ -753,6 +770,200 @@ function EmptyCard({ icon: Icon, text }: { icon: typeof Rocket; text: string }) 
     <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card/40 py-16 text-center">
       <Icon className="h-6 w-6 text-muted-foreground" />
       <p className="mt-3 text-sm text-muted-foreground">{text}</p>
+    </div>
+  );
+}
+
+/* ---------- One-click rollback ---------- */
+function RollbackBanner({ projectId }: { projectId: string }) {
+  const { data: deployments } = useDeployments(projectId);
+  const rollback = useRollbackToLastGood();
+  const list = deployments ?? [];
+  const latest = list[0];
+  const lastGood = list.find((d) => d.status === "online");
+
+  if (!latest || latest.status !== "failed" || !lastGood) return null;
+
+  return (
+    <div className="mt-4 flex flex-col gap-4 rounded-2xl border border-destructive/40 bg-destructive/10 p-5 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex items-start gap-3">
+        <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-destructive/20 text-destructive">
+          <ShieldAlert className="h-5 w-5" />
+        </span>
+        <div>
+          <h3 className="font-semibold text-foreground">Latest build failed</h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Restore the last known-good build{" "}
+            <span className="font-mono text-xs text-foreground">
+              {lastGood.commit_hash?.slice(0, 7) ?? "previous"}
+            </span>{" "}
+            — {lastGood.commit_message ?? "deployment"}. Your domain, SSL certificate and
+            environment variables stay exactly as they are.
+          </p>
+        </div>
+      </div>
+      <Button
+        variant="hero"
+        className="shrink-0"
+        disabled={rollback.isPending}
+        onClick={() =>
+          rollback.mutate(
+            { projectId, target: lastGood },
+            {
+              onSuccess: () => toast.success("Rolling back to the last known-good build"),
+              onError: (e) =>
+                toast.error(e instanceof Error ? e.message : "Rollback failed"),
+            },
+          )
+        }
+      >
+        {rollback.isPending ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <Undo2 className="h-4 w-4" />
+        )}
+        Roll back
+      </Button>
+    </div>
+  );
+}
+
+/* ---------- AI environment checklist ---------- */
+function EnvChecklistPanel({ projectId }: { projectId: string }) {
+  const checklist = useEnvChecklist();
+  const add = useAddEnvVar();
+  const result = checklist.data;
+
+  function download() {
+    if (!result) return;
+    const url = URL.createObjectURL(new Blob([result.template], { type: "text/plain" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = ".env.example";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  return (
+    <div className="rounded-2xl border border-primary/25 bg-primary/5 p-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h3 className="inline-flex items-center gap-2 font-semibold text-foreground">
+            <Sparkles className="h-4 w-4 text-primary" /> AI environment checklist
+          </h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Scans your project files and framework for the variables this app needs, with warnings
+            for missing or risky secrets.
+          </p>
+        </div>
+        <Button
+          variant="hero"
+          disabled={checklist.isPending}
+          onClick={() =>
+            checklist.mutate(projectId, {
+              onError: (e) =>
+                toast.error(e instanceof Error ? e.message : "Could not analyse this project"),
+            })
+          }
+        >
+          {checklist.isPending ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Sparkles className="h-4 w-4" />
+          )}
+          {result ? "Re-analyse" : "Generate checklist"}
+        </Button>
+      </div>
+
+      {result && (
+        <div className="mt-5 space-y-4">
+          {result.warnings.length > 0 && (
+            <ul className="space-y-2 rounded-xl border border-warning/40 bg-warning/10 p-4">
+              {result.warnings.map((w) => (
+                <li key={w} className="flex items-start gap-2 text-sm text-foreground">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
+                  {w}
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <div className="overflow-hidden rounded-xl border border-border bg-card divide-y divide-border">
+            {result.items.length === 0 && (
+              <p className="px-4 py-6 text-center text-sm text-muted-foreground">
+                No environment variables appear to be required.
+              </p>
+            )}
+            {result.items.map((item) => (
+              <div key={item.key} className="flex flex-wrap items-center gap-3 px-4 py-3">
+                <div className="min-w-0 flex-1">
+                  <p className="flex items-center gap-2 font-mono text-sm text-foreground">
+                    {item.key}
+                    {item.present ? (
+                      <CheckCircle2 className="h-3.5 w-3.5 text-success" />
+                    ) : (
+                      <StatusBadge
+                        tone={item.required ? "danger" : "info"}
+                        label={item.required ? "Missing" : "Optional"}
+                      />
+                    )}
+                    {item.secret && <StatusBadge tone="warning" label="Secret" />}
+                  </p>
+                  <p className="text-xs text-muted-foreground">{item.why}</p>
+                </div>
+                {!item.present && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={add.isPending}
+                    onClick={() =>
+                      add.mutate(
+                        {
+                          project_id: projectId,
+                          key: item.key,
+                          value: item.example,
+                          target: "production" as EnvTarget,
+                        },
+                        {
+                          onSuccess: () =>
+                            toast.success(`${item.key} added — replace the placeholder value`),
+                          onError: () => toast.error("Could not add that variable"),
+                        },
+                      )
+                    }
+                  >
+                    <Plus className="h-3.5 w-3.5" /> Add
+                  </Button>
+                )}
+              </div>
+            ))}
+          </div>
+
+          <div>
+            <div className="mb-2 flex items-center justify-between">
+              <h4 className="text-sm font-semibold text-foreground">Sample .env</h4>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    void navigator.clipboard.writeText(result.template);
+                    toast.success("Template copied");
+                  }}
+                >
+                  <Copy className="h-3.5 w-3.5" /> Copy
+                </Button>
+                <Button variant="outline" size="sm" onClick={download}>
+                  <Download className="h-3.5 w-3.5" /> Download
+                </Button>
+              </div>
+            </div>
+            <pre className="max-h-64 overflow-auto rounded-xl border border-border bg-secondary/40 p-4 font-mono text-xs text-muted-foreground">
+              {result.template}
+            </pre>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
