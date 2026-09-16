@@ -13,6 +13,9 @@ import {
   Link2 as LinkIcon,
   UploadCloud,
   FolderUp,
+  Terminal,
+  Pencil,
+  RotateCcw,
 } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/DashboardShell";
 import { Button } from "@/components/ui/button";
@@ -38,6 +41,9 @@ import {
   frameworkMeta,
   subdomainFor,
   slugify,
+  detectBuildPlan,
+  buildPlanFor,
+  type BuildPlan,
   type SampleRepo,
 } from "@/lib/egreed";
 import { cn } from "@/lib/utils";
@@ -72,6 +78,21 @@ function DeployWizard() {
   const [framework, setFramework] = useState("static");
   const [branch, setBranch] = useState("main");
   const [buildCmd, setBuildCmd] = useState("");
+  const [installCmd, setInstallCmd] = useState("");
+  const [startCmd, setStartCmd] = useState("");
+  const [outputDir, setOutputDir] = useState("");
+  const [planNotes, setPlanNotes] = useState<string[]>([]);
+  const [overriding, setOverriding] = useState(false);
+
+  function applyPlan(plan: BuildPlan) {
+    setFramework(plan.framework);
+    setBuildCmd(plan.buildCommand);
+    setInstallCmd(plan.installCommand);
+    setStartCmd(plan.startCommand);
+    setOutputDir(plan.outputDir);
+    setPlanNotes(plan.notes);
+    setOverriding(false);
+  }
 
   const isUpload = sourceMode === "upload";
   const effectiveStep: Step = (gh || isUpload) && step === 0 ? 1 : step;
@@ -91,8 +112,7 @@ function DeployWizard() {
     setRepo(r);
     setUpload(null);
     setName(r.name);
-    setFramework(r.framework);
-    setBuildCmd(frameworkMeta(r.framework).buildCommand);
+    applyPlan(detectBuildPlan(undefined, r.framework));
     setStep(2);
   }
 
@@ -134,8 +154,7 @@ function DeployWizard() {
         first.name.replace(/\.zip$/i, "") ||
         "uploaded-app";
       setName(guessName);
-      setFramework(guessed);
-      setBuildCmd(frameworkMeta(guessed).buildCommand);
+      applyPlan(detectBuildPlan(parsed.files, guessed));
       toast.success(`${count} files ready to deploy`);
       setStep(2);
     } catch (e) {
@@ -155,6 +174,9 @@ function DeployWizard() {
         framework,
         branch: repo ? branch : "upload",
         build_command: buildCmd,
+        install_command: installCmd,
+        start_command: startCmd,
+        output_dir: outputDir,
         source_type: upload ? "upload" : "github",
         files: upload?.files,
       });
@@ -427,10 +449,7 @@ function DeployWizard() {
                   <Label>Framework</Label>
                   <Select
                     value={framework}
-                    onValueChange={(v) => {
-                      setFramework(v);
-                      setBuildCmd(frameworkMeta(v).buildCommand);
-                    }}
+                    onValueChange={(v) => applyPlan(buildPlanFor(v))}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -458,14 +477,92 @@ function DeployWizard() {
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="build">Build command</Label>
-                <Input
-                  id="build"
-                  value={buildCmd}
-                  onChange={(e) => setBuildCmd(e.target.value)}
-                  className="font-mono text-sm"
-                />
+              <div className="rounded-2xl border border-border bg-secondary/25 p-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h4 className="inline-flex items-center gap-2 text-sm font-semibold text-foreground">
+                    <Terminal className="h-4 w-4 text-primary" /> Detected build plan
+                  </h4>
+                  <div className="flex items-center gap-2">
+                    {overriding && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => applyPlan(buildPlanFor(framework))}
+                      >
+                        <RotateCcw className="h-3.5 w-3.5" /> Reset to detected
+                      </Button>
+                    )}
+                    <Button variant="outline" size="sm" onClick={() => setOverriding((o) => !o)}>
+                      <Pencil className="h-3.5 w-3.5" />
+                      {overriding ? "Done" : "Override commands"}
+                    </Button>
+                  </div>
+                </div>
+
+                {!overriding ? (
+                  <dl className="mt-3 divide-y divide-border/70 rounded-xl border border-border bg-card">
+                    {[
+                      ["Install", installCmd],
+                      ["Build", buildCmd],
+                      ["Start", startCmd],
+                      ["Output directory", outputDir],
+                    ].map(([label, value]) => (
+                      <div key={label} className="flex items-center justify-between gap-3 px-4 py-2.5">
+                        <dt className="text-xs text-muted-foreground">{label}</dt>
+                        <dd className="truncate font-mono text-xs text-foreground">
+                          {value || "—"}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                ) : (
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="install">Install command</Label>
+                      <Input
+                        id="install"
+                        value={installCmd}
+                        onChange={(e) => setInstallCmd(e.target.value)}
+                        className="font-mono text-sm"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="build">Build command</Label>
+                      <Input
+                        id="build"
+                        value={buildCmd}
+                        onChange={(e) => setBuildCmd(e.target.value)}
+                        className="font-mono text-sm"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="start">Start command</Label>
+                      <Input
+                        id="start"
+                        value={startCmd}
+                        onChange={(e) => setStartCmd(e.target.value)}
+                        className="font-mono text-sm"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="outdir">Output directory</Label>
+                      <Input
+                        id="outdir"
+                        value={outputDir}
+                        onChange={(e) => setOutputDir(e.target.value)}
+                        className="font-mono text-sm"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {planNotes.length > 0 && (
+                  <ul className="mt-3 space-y-1 text-xs text-muted-foreground">
+                    {planNotes.map((n) => (
+                      <li key={n}>• {n}</li>
+                    ))}
+                  </ul>
+                )}
               </div>
             </div>
 
