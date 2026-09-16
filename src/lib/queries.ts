@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { triggerDeployment } from "@/lib/deployments.functions";
 import { addDomain, provisionDomain, refreshDomain, syncEdgeRouting } from "@/lib/domains.functions";
 import { rebuildPreview } from "@/lib/preview.functions";
+import { generateEnvChecklist } from "@/lib/ai.functions";
 import {
   buildLogsFor,
   subdomainFor,
@@ -170,6 +171,9 @@ export interface CreateProjectInput {
   framework: string;
   branch: string;
   build_command?: string | null;
+  install_command?: string | null;
+  start_command?: string | null;
+  output_dir?: string | null;
   /** "github" (default) or "upload" for ZIP/folder uploads. */
   source_type?: "github" | "upload";
   /** Uploaded file contents, keyed by relative path. */
@@ -194,6 +198,9 @@ export function useCreateProject() {
           repository_url: input.repository_url,
           framework: input.framework,
           build_command: input.build_command ?? fm.buildCommand,
+          install_command: input.install_command ?? fm.installCommand,
+          start_command: input.start_command ?? fm.startCommand,
+          output_dir: input.output_dir ?? fm.outputDir,
           branch: input.branch || "main",
           status: "online",
           domain,
@@ -268,6 +275,9 @@ export function useDeployProject() {
           repository_url: input.repository_url,
           framework: input.framework,
           build_command: input.build_command ?? fm.buildCommand,
+          install_command: input.install_command ?? fm.installCommand,
+          start_command: input.start_command ?? fm.startCommand,
+          output_dir: input.output_dir ?? fm.outputDir,
           branch: input.branch || "main",
           status: "online",
           domain,
@@ -748,5 +758,40 @@ export function useUploadProjectFiles() {
     },
     onSuccess: (_d, input) =>
       qc.invalidateQueries({ queryKey: ["project-files", input.project_id] }),
+  });
+}
+
+/* ---------------- AI environment checklist ---------------- */
+
+/** Ask Lovable AI for an env-var checklist + sample .env for a project. */
+export function useEnvChecklist() {
+  const fn = useServerFn(generateEnvChecklist);
+  return useMutation({
+    mutationFn: async (projectId: string) => fn({ data: { projectId } }),
+  });
+}
+
+/** Roll a project back to its latest known-good (online) deployment. */
+export function useRollbackToLastGood() {
+  const qc = useQueryClient();
+  const trigger = useServerFn(triggerDeployment);
+  return useMutation({
+    mutationFn: async (input: { projectId: string; target: Deployment }) =>
+      trigger({
+        data: {
+          projectId: input.projectId,
+          commitHash: input.target.commit_hash ?? undefined,
+          commitMessage: `Rollback to last known-good build ${
+            input.target.commit_hash?.slice(0, 7) ?? ""
+          } — ${input.target.commit_message ?? "deployment"}`,
+          branch: input.target.branch,
+          triggeredBy: "rollback",
+        },
+      }),
+    onSuccess: (_d, input) => {
+      qc.invalidateQueries({ queryKey: ["deployments"] });
+      qc.invalidateQueries({ queryKey: ["projects"] });
+      qc.invalidateQueries({ queryKey: ["project", input.projectId] });
+    },
   });
 }
