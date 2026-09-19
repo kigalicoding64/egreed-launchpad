@@ -54,10 +54,15 @@ export const rebuildPreview = createServerFn({ method: "POST" })
     Object.assign(env, data.envOverrides);
 
     // Workspace edits / uploaded files live in project_files.
-    const { data: fileRows } = await supabase
+    const { data: fileRows, error: filesError } = await supabase
       .from("project_files")
       .select("path, content")
       .eq("project_id", project.id);
+    if (filesError) {
+      throw new Error(
+        "We couldn't read this project's source files. Check your project permissions and try again.",
+      );
+    }
     const fileMap: Record<string, string> = {};
     for (const row of fileRows ?? []) fileMap[row.path] = row.content;
 

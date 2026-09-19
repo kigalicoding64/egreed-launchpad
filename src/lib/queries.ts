@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useCallback, useEffect, useId, useState } from "react";
 import {
   useMutation,
   useQuery,
@@ -443,34 +443,66 @@ export function useTriggerDeployment() {
  * Subscribe to realtime changes and keep React Query caches fresh, so
  * deployment/domain status updates stream into the UI without polling.
  */
+export type RealtimeSyncStatus = "connecting" | "connected" | "failed";
+
 export function useRealtimeSync() {
   const qc = useQueryClient();
+  const instanceId = useId().replace(/[^a-zA-Z0-9_-]/g, "");
+  const [attempt, setAttempt] = useState(0);
+  const [status, setStatus] = useState<RealtimeSyncStatus>("connecting");
+
+  const retry = useCallback(() => {
+    setStatus("connecting");
+    setAttempt((value) => value + 1);
+  }, []);
+
   useEffect(() => {
-    const channel = supabase
-      .channel("egreed-live")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "deployments" },
-        () => {
-          qc.invalidateQueries({ queryKey: ["deployments"] });
-          qc.invalidateQueries({ queryKey: ["projects"] });
-        },
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "domains" },
-        () => qc.invalidateQueries({ queryKey: ["domains"] }),
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "projects" },
-        () => qc.invalidateQueries({ queryKey: ["projects"] }),
-      )
-      .subscribe();
+    let active = true;
+    let channel: ReturnType<typeof supabase.channel> | undefined;
+
+    try {
+      channel = supabase
+        .channel(`egreed-live-${instanceId}-${attempt}`)
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "deployments" },
+          () => {
+            qc.invalidateQueries({ queryKey: ["deployments"] });
+            qc.invalidateQueries({ queryKey: ["projects"] });
+          },
+        )
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "domains" },
+          () => qc.invalidateQueries({ queryKey: ["domains"] }),
+        )
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "projects" },
+          () => qc.invalidateQueries({ queryKey: ["projects"] }),
+        )
+        .subscribe((nextStatus) => {
+          if (!active) return;
+          if (nextStatus === "SUBSCRIBED") {
+            setStatus("connected");
+            void qc.invalidateQueries({ queryKey: ["deployments"] });
+            void qc.invalidateQueries({ queryKey: ["projects"] });
+            void qc.invalidateQueries({ queryKey: ["domains"] });
+          } else if (nextStatus === "CHANNEL_ERROR" || nextStatus === "TIMED_OUT") {
+            setStatus("failed");
+          }
+        });
+    } catch {
+      setStatus("failed");
+    }
+
     return () => {
-      supabase.removeChannel(channel);
+      active = false;
+      if (channel) void supabase.removeChannel(channel);
     };
-  }, [qc]);
+  }, [attempt, instanceId, qc]);
+
+  return { status, retry };
 }
 
 /* ---------------- Domains ---------------- */

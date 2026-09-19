@@ -66,6 +66,7 @@ export function AppPreview({
   const [showConsole, setShowConsole] = useState(false);
   const [consoleLines, setConsoleLines] = useState<ConsoleLine[]>([]);
   const [build, setBuild] = useState<PreviewBuild | null>(null);
+  const [previewError, setPreviewError] = useState<string | null>(null);
   const [overrides, setOverrides] = useState<Record<string, string>>({});
   const [newKey, setNewKey] = useState("");
   const [newValue, setNewValue] = useState("");
@@ -101,6 +102,7 @@ export function AppPreview({
   const run = useCallback(
     (opts?: { extraEnv?: Record<string, string>; path?: string; pushHistory?: boolean }) => {
       const path = opts?.path ?? "/";
+      setPreviewError(null);
       rebuild.mutate(
         {
           projectId: project.id,
@@ -112,6 +114,7 @@ export function AppPreview({
           onSuccess: (res) => {
             const next = res as PreviewBuild;
             setBuild(next);
+            setPreviewError(null);
             setAddressDraft(next.path);
             setHash("");
             setConsoleLines([]);
@@ -125,8 +128,14 @@ export function AppPreview({
               });
             }
           },
-          onError: (e) =>
-            toast.error(e instanceof Error ? e.message : "Could not build the preview"),
+          onError: (e) => {
+            const message =
+              e instanceof Error
+                ? e.message
+                : "The preview could not be built. Check the source and try again.";
+            setPreviewError(message);
+            toast.error("Preview build failed");
+          },
         },
       );
     },
@@ -370,6 +379,28 @@ export function AppPreview({
 
         </div>
 
+        {previewError && (
+          <div className="flex flex-wrap items-start justify-between gap-3 border-b border-destructive/30 bg-destructive/10 px-4 py-3">
+            <div className="flex min-w-0 gap-2">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+              <div>
+                <p className="text-sm font-medium text-foreground">Preview build failed</p>
+                <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+                  {previewError}
+                </p>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => run({ path: currentPath, pushHistory: false })}
+              disabled={rebuild.isPending}
+            >
+              <RefreshCw className="h-3.5 w-3.5" /> Retry preview
+            </Button>
+          </div>
+        )}
+
         {/* Env override panel */}
         {showEnv && (
           <div className="space-y-4 border-b border-border bg-background/50 px-4 py-4">
@@ -577,7 +608,7 @@ export function AppPreview({
                 sandbox="allow-scripts allow-forms allow-popups"
               />
             ) : (
-              !rebuild.isPending && (
+              !rebuild.isPending && !previewError && (
                 <div className="flex h-full flex-col items-center justify-center gap-3 bg-background p-6 text-center">
                   <p className="text-sm text-muted-foreground">
                     No preview yet — build one from your latest commit.

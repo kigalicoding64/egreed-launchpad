@@ -281,14 +281,22 @@ export async function buildRepoPreview(opts: {
   if (!ref) throw new Error("Could not determine the GitHub owner/repo for this project.");
 
   const branch = opts.branch || "main";
-  const commit = await ghJson<{
+  let commit: {
     sha: string;
     commit: { message: string; author: { name: string; date: string } };
-  }>(`${GH_API}/repos/${ref.owner}/${ref.repo}/commits/${encodeURIComponent(branch)}`);
+  } | null = null;
+  try {
+    commit = await ghJson<{
+      sha: string;
+      commit: { message: string; author: { name: string; date: string } };
+    }>(`${GH_API}/repos/${ref.owner}/${ref.repo}/commits/${encodeURIComponent(branch)}`);
+  } catch {
+    commit = null;
+  }
 
   if (!commit) {
     throw new Error(
-      `GitHub could not be reached for ${ref.owner}/${ref.repo}@${branch}. Check the repository is public and the branch exists.`,
+      `We couldn't access ${ref.owner}/${ref.repo} on branch “${branch}”. Check that the repository is public, the branch still exists, and your connected GitHub account has permission. If it is private, reconnect GitHub with access to this repository, then retry.`,
     );
   }
 
@@ -493,7 +501,9 @@ export async function buildUploadPreview(opts: {
   const requested = normalisePath(opts.path);
 
   if (!paths.length) {
-    throw new Error("This project has no uploaded files yet. Upload a ZIP or folder first.");
+    throw new Error(
+      "We couldn't access any uploaded source files. Check that the ZIP or folder finished uploading and that you still have permission to this project, then upload the source again if needed.",
+    );
   }
 
   let entry: string | null = null;

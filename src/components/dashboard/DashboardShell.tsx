@@ -9,6 +9,8 @@ import {
   LogOut,
   Plus,
   Menu,
+  RefreshCw,
+  WifiOff,
   X,
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
@@ -39,7 +41,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
   const qc = useQueryClient();
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  useRealtimeSync();
+  const liveUpdates = useRealtimeSync();
 
   async function handleSignOut() {
     await qc.cancelQueries();
@@ -145,7 +147,20 @@ export function DashboardShell({ children }: { children: ReactNode }) {
           </button>
           <Logo withText={false} />
         </header>
-        <main className="mx-auto max-w-6xl px-5 py-8">{children}</main>
+        <main className="mx-auto max-w-6xl px-5 py-8">
+          {pathname.startsWith("/workspace/") && liveUpdates.status === "failed" && (
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3">
+              <p className="flex items-center gap-2 text-sm text-foreground">
+                <WifiOff className="h-4 w-4 text-destructive" />
+                Live updates disconnected. Your open file and unsaved changes are safe.
+              </p>
+              <Button variant="outline" size="sm" onClick={liveUpdates.retry}>
+                <RefreshCw className="h-3.5 w-3.5" /> Retry live updates
+              </Button>
+            </div>
+          )}
+          {children}
+        </main>
       </div>
     </div>
   );

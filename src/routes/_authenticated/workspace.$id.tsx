@@ -15,7 +15,6 @@ import {
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
-import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import { AppPreview } from "@/components/dashboard/AppPreview";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -305,29 +304,25 @@ function WorkspacePage() {
 
   if (isLoading) {
     return (
-      <DashboardShell>
-        <div className="flex justify-center py-24">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        </div>
-      </DashboardShell>
+      <div className="flex justify-center py-24">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
     );
   }
 
   if (!project) {
     return (
-      <DashboardShell>
-        <div className="py-24 text-center">
-          <h1 className="text-lg font-semibold text-foreground">Project not found</h1>
-          <Link to="/projects" className="mt-3 inline-block text-sm text-primary">
-            Back to projects
-          </Link>
-        </div>
-      </DashboardShell>
+      <div className="py-24 text-center">
+        <h1 className="text-lg font-semibold text-foreground">Project not found</h1>
+        <Link to="/projects" className="mt-3 inline-block text-sm text-primary">
+          Back to projects
+        </Link>
+      </div>
     );
   }
 
   return (
-    <DashboardShell>
+    <>
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div>
           <Link
@@ -443,6 +438,6 @@ function WorkspacePage() {
           />
         </div>
       </div>
-    </DashboardShell>
+    </>
   );
 }
