@@ -12,6 +12,7 @@ import {
   Cpu,
   HardDrive,
   ArrowRight,
+  Fingerprint,
 } from "lucide-react";
 import { SiteHeader } from "@/components/marketing/SiteHeader";
 import { SiteFooter } from "@/components/marketing/SiteFooter";
@@ -48,6 +49,7 @@ const CORE = [
   { icon: Terminal, title: "Real-time build logs", desc: "Watch each step — connecting, cloning, installing, building, deploying — with full logs." },
   { icon: Boxes, title: "Environment variables", desc: "Manage secrets and config per project and target: production, preview and development." },
   { icon: ShieldCheck, title: "Secure by design", desc: "Encrypted credentials, webhook signature verification, role permissions and deployment isolation." },
+  { icon: Fingerprint, title: "EGREED ID single sign-on", desc: `Authentication is powered by EGREED ID (id.${ROOT_DOMAIN}) — one account for Deploy and every EGREED product.` },
 ];
 
 const FUTURE = [

@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Loader2, ArrowLeft } from "lucide-react";
+import { Loader2, ArrowLeft, Fingerprint } from "lucide-react";
 import { z } from "zod";
 import { Logo } from "@/components/brand/Logo";
 import { Button } from "@/components/ui/button";
@@ -127,6 +127,15 @@ function AuthPage() {
               ? "Start deploying to EGREED Deploy for free."
               : "Sign in to your EGREED Deploy dashboard."}
           </p>
+
+          <div className="mt-4 flex items-center gap-2.5 rounded-xl border border-border bg-card px-3.5 py-2.5">
+            <Fingerprint className="h-4 w-4 shrink-0 text-primary" />
+            <p className="text-xs text-muted-foreground">
+              Secured by <span className="font-semibold text-foreground">EGREED ID</span> — your
+              single sign-on at{" "}
+              <span className="font-mono text-foreground">id.egreedtech.org</span>
+            </p>
+          </div>
 
           <Button
             type="button"
