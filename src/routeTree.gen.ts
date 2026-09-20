@@ -29,6 +29,8 @@ import { Route as AuthenticatedProjectsIdRouteImport } from './routes/_authentic
 import { Route as ApiPublicWebhooksGithubRouteImport } from './routes/api/public/webhooks/github'
 import { Route as ApiPublicHooksSslRenewRouteImport } from './routes/api/public/hooks/ssl-renew'
 import { Route as ApiPublicHooksEdgeSyncRouteImport } from './routes/api/public/hooks/edge-sync'
+import { Route as ApiPublicAuthEgreedStartRouteImport } from './routes/api/public/auth/egreed/start'
+import { Route as ApiPublicAuthEgreedCallbackRouteImport } from './routes/api/public/auth/egreed/callback'
 
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
@@ -132,6 +134,18 @@ const ApiPublicHooksEdgeSyncRoute = ApiPublicHooksEdgeSyncRouteImport.update({
   path: '/api/public/hooks/edge-sync',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicAuthEgreedStartRoute =
+  ApiPublicAuthEgreedStartRouteImport.update({
+    id: '/api/public/auth/egreed/start',
+    path: '/api/public/auth/egreed/start',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicAuthEgreedCallbackRoute =
+  ApiPublicAuthEgreedCallbackRouteImport.update({
+    id: '/api/public/auth/egreed/callback',
+    path: '/api/public/auth/egreed/callback',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -153,6 +167,8 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/edge-sync': typeof ApiPublicHooksEdgeSyncRoute
   '/api/public/hooks/ssl-renew': typeof ApiPublicHooksSslRenewRoute
   '/api/public/webhooks/github': typeof ApiPublicWebhooksGithubRoute
+  '/api/public/auth/egreed/callback': typeof ApiPublicAuthEgreedCallbackRoute
+  '/api/public/auth/egreed/start': typeof ApiPublicAuthEgreedStartRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -174,6 +190,8 @@ export interface FileRoutesByTo {
   '/api/public/hooks/edge-sync': typeof ApiPublicHooksEdgeSyncRoute
   '/api/public/hooks/ssl-renew': typeof ApiPublicHooksSslRenewRoute
   '/api/public/webhooks/github': typeof ApiPublicWebhooksGithubRoute
+  '/api/public/auth/egreed/callback': typeof ApiPublicAuthEgreedCallbackRoute
+  '/api/public/auth/egreed/start': typeof ApiPublicAuthEgreedStartRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -197,6 +215,8 @@ export interface FileRoutesById {
   '/api/public/hooks/edge-sync': typeof ApiPublicHooksEdgeSyncRoute
   '/api/public/hooks/ssl-renew': typeof ApiPublicHooksSslRenewRoute
   '/api/public/webhooks/github': typeof ApiPublicWebhooksGithubRoute
+  '/api/public/auth/egreed/callback': typeof ApiPublicAuthEgreedCallbackRoute
+  '/api/public/auth/egreed/start': typeof ApiPublicAuthEgreedStartRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -220,6 +240,8 @@ export interface FileRouteTypes {
     | '/api/public/hooks/edge-sync'
     | '/api/public/hooks/ssl-renew'
     | '/api/public/webhooks/github'
+    | '/api/public/auth/egreed/callback'
+    | '/api/public/auth/egreed/start'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -241,6 +263,8 @@ export interface FileRouteTypes {
     | '/api/public/hooks/edge-sync'
     | '/api/public/hooks/ssl-renew'
     | '/api/public/webhooks/github'
+    | '/api/public/auth/egreed/callback'
+    | '/api/public/auth/egreed/start'
   id:
     | '__root__'
     | '/'
@@ -263,6 +287,8 @@ export interface FileRouteTypes {
     | '/api/public/hooks/edge-sync'
     | '/api/public/hooks/ssl-renew'
     | '/api/public/webhooks/github'
+    | '/api/public/auth/egreed/callback'
+    | '/api/public/auth/egreed/start'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -277,6 +303,8 @@ export interface RootRouteChildren {
   ApiPublicHooksEdgeSyncRoute: typeof ApiPublicHooksEdgeSyncRoute
   ApiPublicHooksSslRenewRoute: typeof ApiPublicHooksSslRenewRoute
   ApiPublicWebhooksGithubRoute: typeof ApiPublicWebhooksGithubRoute
+  ApiPublicAuthEgreedCallbackRoute: typeof ApiPublicAuthEgreedCallbackRoute
+  ApiPublicAuthEgreedStartRoute: typeof ApiPublicAuthEgreedStartRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -421,6 +449,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksEdgeSyncRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/auth/egreed/start': {
+      id: '/api/public/auth/egreed/start'
+      path: '/api/public/auth/egreed/start'
+      fullPath: '/api/public/auth/egreed/start'
+      preLoaderRoute: typeof ApiPublicAuthEgreedStartRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/auth/egreed/callback': {
+      id: '/api/public/auth/egreed/callback'
+      path: '/api/public/auth/egreed/callback'
+      fullPath: '/api/public/auth/egreed/callback'
+      preLoaderRoute: typeof ApiPublicAuthEgreedCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -463,6 +505,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHooksEdgeSyncRoute: ApiPublicHooksEdgeSyncRoute,
   ApiPublicHooksSslRenewRoute: ApiPublicHooksSslRenewRoute,
   ApiPublicWebhooksGithubRoute: ApiPublicWebhooksGithubRoute,
+  ApiPublicAuthEgreedCallbackRoute: ApiPublicAuthEgreedCallbackRoute,
+  ApiPublicAuthEgreedStartRoute: ApiPublicAuthEgreedStartRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
