@@ -10,6 +10,7 @@ import {
   Zap,
   CheckCircle2,
   Terminal,
+  Fingerprint,
 } from "lucide-react";
 import { SiteHeader } from "@/components/marketing/SiteHeader";
 import { SiteFooter } from "@/components/marketing/SiteFooter";
@@ -32,6 +33,7 @@ function Landing() {
         <Steps />
         <Features />
         <DomainShowcase />
+        <EgreedIdBand />
         <CtaBand />
       </main>
       <SiteFooter />
@@ -174,6 +176,7 @@ function Features() {
     { icon: Zap, title: "Framework detection", desc: "Next.js, React, Node, Python and static sites — configured for you." },
     { icon: Terminal, title: "Live build logs", desc: "Follow each build step and inspect logs for any deployment." },
     { icon: Boxes, title: "Env variables", desc: "Vercel-style environment variables scoped per project and target." },
+    { icon: Fingerprint, title: "EGREED ID single sign-on", desc: `One identity across the EGREED ecosystem — powered by id.${ROOT_DOMAIN}.` },
   ];
   return (
     <section className="border-y border-border/60 bg-card/20">
@@ -243,6 +246,37 @@ function DomainShowcase() {
             </div>
           ))}
         </div>
+      </div>
+    </section>
+  );
+}
+
+function EgreedIdBand() {
+  return (
+    <section className="border-y border-border/60 bg-card/20">
+      <div className="mx-auto grid max-w-6xl items-center gap-8 px-5 py-16 sm:grid-cols-[auto_1fr_auto]">
+        <span className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/12 text-primary">
+          <Fingerprint className="h-7 w-7" />
+        </span>
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-widest text-primary">
+            EGREED ID
+          </p>
+          <h2 className="mt-2 text-2xl font-bold text-foreground sm:text-3xl">
+            One account for the whole EGREED ecosystem
+          </h2>
+          <p className="mt-3 max-w-2xl text-sm text-muted-foreground">
+            EGREED Deploy uses <span className="font-mono text-foreground">id.{ROOT_DOMAIN}</span>{" "}
+            for authentication. Your EGREED ID signs you into Deploy and every other EGREED
+            product — secure, centralized, and always yours.
+          </p>
+        </div>
+        <Button asChild variant="outline" size="lg">
+          <Link to="/auth" search={{ mode: "signup" }}>
+            Get your EGREED ID
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </Button>
       </div>
     </section>
   );
