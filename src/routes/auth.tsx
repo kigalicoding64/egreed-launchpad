@@ -14,6 +14,7 @@ import heroBg from "@/assets/hero-bg.jpg";
 
 const searchSchema = z.object({
   mode: z.enum(["login", "signup"]).optional(),
+  egreed_error: z.string().max(500).optional(),
 });
 
 export const Route = createFileRoute("/auth")({
@@ -137,10 +138,30 @@ function AuthPage() {
             </p>
           </div>
 
+          {search.egreed_error && (
+            <p className="mt-4 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+              {search.egreed_error}
+            </p>
+          )}
+
+          <Button
+            type="button"
+            variant="hero"
+            className="mt-6 w-full"
+            disabled={busy}
+            onClick={() => {
+              setBusy(true);
+              window.location.href = "/api/public/auth/egreed/start?next=/dashboard";
+            }}
+          >
+            <Fingerprint className="h-4 w-4" />
+            Continue with EGREED ID
+          </Button>
+
           <Button
             type="button"
             variant="outline"
-            className="mt-6 w-full"
+            className="mt-3 w-full"
             onClick={handleGoogle}
             disabled={busy}
           >
