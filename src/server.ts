@@ -49,7 +49,15 @@ export default {
     try {
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
-      return await normalizeCatastrophicSsrResponse(response);
+      const normalized = await normalizeCatastrophicSsrResponse(response);
+      // The Code Studio runs a real in-browser Node runtime, which needs cross-origin isolation.
+      if (new URL(request.url).pathname.startsWith("/ide/")) {
+        const isolated = new Response(normalized.body, normalized);
+        isolated.headers.set("Cross-Origin-Opener-Policy", "same-origin");
+        isolated.headers.set("Cross-Origin-Embedder-Policy", "credentialless");
+        return isolated;
+      }
+      return normalized;
     } catch (error) {
       console.error(error);
       return new Response(renderErrorPage(), {
