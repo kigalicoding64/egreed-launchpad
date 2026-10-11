@@ -26,6 +26,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedProjectsIndexRouteImport } from './routes/_authenticated/projects.index'
 import { Route as AuthenticatedWorkspaceIdRouteImport } from './routes/_authenticated/workspace.$id'
 import { Route as AuthenticatedProjectsIdRouteImport } from './routes/_authenticated/projects.$id'
+import { Route as AuthenticatedIdeIdRouteImport } from './routes/_authenticated/ide.$id'
 import { Route as ApiPublicWebhooksGithubRouteImport } from './routes/api/public/webhooks/github'
 import { Route as ApiPublicHooksSslRenewRouteImport } from './routes/api/public/hooks/ssl-renew'
 import { Route as ApiPublicHooksEdgeSyncRouteImport } from './routes/api/public/hooks/edge-sync'
@@ -119,6 +120,11 @@ const AuthenticatedProjectsIdRoute = AuthenticatedProjectsIdRouteImport.update({
   path: '/projects/$id',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedIdeIdRoute = AuthenticatedIdeIdRouteImport.update({
+  id: '/ide/$id',
+  path: '/ide/$id',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const ApiPublicWebhooksGithubRoute = ApiPublicWebhooksGithubRouteImport.update({
   id: '/api/public/webhooks/github',
   path: '/api/public/webhooks/github',
@@ -161,6 +167,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AuthenticatedSettingsRoute
   '/ssl': typeof AuthenticatedSslRoute
   '/hosted/$subdomain': typeof HostedSubdomainRoute
+  '/ide/$id': typeof AuthenticatedIdeIdRoute
   '/projects/$id': typeof AuthenticatedProjectsIdRoute
   '/workspace/$id': typeof AuthenticatedWorkspaceIdRoute
   '/projects/': typeof AuthenticatedProjectsIndexRoute
@@ -184,6 +191,7 @@ export interface FileRoutesByTo {
   '/settings': typeof AuthenticatedSettingsRoute
   '/ssl': typeof AuthenticatedSslRoute
   '/hosted/$subdomain': typeof HostedSubdomainRoute
+  '/ide/$id': typeof AuthenticatedIdeIdRoute
   '/projects/$id': typeof AuthenticatedProjectsIdRoute
   '/workspace/$id': typeof AuthenticatedWorkspaceIdRoute
   '/projects': typeof AuthenticatedProjectsIndexRoute
@@ -209,6 +217,7 @@ export interface FileRoutesById {
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/ssl': typeof AuthenticatedSslRoute
   '/hosted/$subdomain': typeof HostedSubdomainRoute
+  '/_authenticated/ide/$id': typeof AuthenticatedIdeIdRoute
   '/_authenticated/projects/$id': typeof AuthenticatedProjectsIdRoute
   '/_authenticated/workspace/$id': typeof AuthenticatedWorkspaceIdRoute
   '/_authenticated/projects/': typeof AuthenticatedProjectsIndexRoute
@@ -234,6 +243,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/ssl'
     | '/hosted/$subdomain'
+    | '/ide/$id'
     | '/projects/$id'
     | '/workspace/$id'
     | '/projects/'
@@ -257,6 +267,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/ssl'
     | '/hosted/$subdomain'
+    | '/ide/$id'
     | '/projects/$id'
     | '/workspace/$id'
     | '/projects'
@@ -281,6 +292,7 @@ export interface FileRouteTypes {
     | '/_authenticated/settings'
     | '/_authenticated/ssl'
     | '/hosted/$subdomain'
+    | '/_authenticated/ide/$id'
     | '/_authenticated/projects/$id'
     | '/_authenticated/workspace/$id'
     | '/_authenticated/projects/'
@@ -428,6 +440,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProjectsIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/ide/$id': {
+      id: '/_authenticated/ide/$id'
+      path: '/ide/$id'
+      fullPath: '/ide/$id'
+      preLoaderRoute: typeof AuthenticatedIdeIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/api/public/webhooks/github': {
       id: '/api/public/webhooks/github'
       path: '/api/public/webhooks/github'
@@ -473,6 +492,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDomainsRoute: typeof AuthenticatedDomainsRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedSslRoute: typeof AuthenticatedSslRoute
+  AuthenticatedIdeIdRoute: typeof AuthenticatedIdeIdRoute
   AuthenticatedProjectsIdRoute: typeof AuthenticatedProjectsIdRoute
   AuthenticatedWorkspaceIdRoute: typeof AuthenticatedWorkspaceIdRoute
   AuthenticatedProjectsIndexRoute: typeof AuthenticatedProjectsIndexRoute
@@ -485,6 +505,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDomainsRoute: AuthenticatedDomainsRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedSslRoute: AuthenticatedSslRoute,
+  AuthenticatedIdeIdRoute: AuthenticatedIdeIdRoute,
   AuthenticatedProjectsIdRoute: AuthenticatedProjectsIdRoute,
   AuthenticatedWorkspaceIdRoute: AuthenticatedWorkspaceIdRoute,
   AuthenticatedProjectsIndexRoute: AuthenticatedProjectsIndexRoute,
