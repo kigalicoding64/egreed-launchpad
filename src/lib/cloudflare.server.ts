@@ -21,6 +21,40 @@ export function cloudflareConfigured(): boolean {
   return getCloudflareConfig() !== null;
 }
 
+/**
+ * Pick the Cloudflare zone for a hostname: the admin-managed platform domain
+ * that the hostname belongs to, falling back to the default env zone.
+ */
+export async function resolveCloudflareConfig(
+  db: { from: (t: string) => any },
+  hostname: string,
+): Promise<CloudflareConfig | null> {
+  const base = getCloudflareConfig();
+  const token = base?.token ?? process.env.CLOUDFLARE_API_TOKEN ?? process.env.CLOUDFLARE_API_Token;
+  if (!token) return null;
+  try {
+    const { data } = await db.from("platform_domains").select("domain, zone_id").not("zone_id", "is", null);
+    const match = ((data ?? []) as { domain: string; zone_id: string }[])
+      .filter((r) => hostname === r.domain || hostname.endsWith(`.${r.domain}`))
+      .sort((a, b) => b.domain.length - a.domain.length)[0];
+    if (match) return { token, zoneId: match.zone_id };
+  } catch {
+    /* fall back to env zone */
+  }
+  return base;
+}
+
+/** The admin-selected main platform domain (server-side). */
+export async function getActiveRootDomainFromDb(db: { from: (t: string) => any }): Promise<string> {
+  const { ROOT_DOMAIN } = await import("@/lib/egreed");
+  try {
+    const { data } = await db.from("platform_domains").select("domain").eq("is_active", true).maybeSingle();
+    return (data?.domain as string) || ROOT_DOMAIN;
+  } catch {
+    return ROOT_DOMAIN;
+  }
+}
+
 interface CfRecord {
   id: string;
   type: string;

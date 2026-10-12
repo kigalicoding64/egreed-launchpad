@@ -3,7 +3,7 @@
 // status / progress / build_logs to the database (streamed to the UI via realtime).
 // Import dynamically inside server handlers/server functions only.
 import { DEPLOY_PHASES, DNS_TARGET, slugify, subdomainFor } from "@/lib/egreed";
-import { getCloudflareConfig, upsertCnameRecord } from "@/lib/cloudflare.server";
+import { getActiveRootDomainFromDb, resolveCloudflareConfig, upsertCnameRecord } from "@/lib/cloudflare.server";
 
 // Loose client shape — works with both the admin client and the RLS user client.
 type DbClient = { from: (table: string) => any };
@@ -33,7 +33,7 @@ async function ensureDomain(
     .maybeSingle();
   if (existing) return existing as DomainRow;
 
-  const full = project.domain ?? subdomainFor(project.name);
+  const full = project.domain ?? subdomainFor(project.name, await getActiveRootDomainFromDb(db));
   const sub = slugify(project.name) || "app";
   const { data: created, error } = await db
     .from("domains")
@@ -64,7 +64,7 @@ async function ensureDomain(
 export async function provisionDnsAndSsl(db: DbClient, domain: DomainRow): Promise<string[]> {
   const logs: string[] = [];
   const now = new Date();
-  const cfg = getCloudflareConfig();
+  const cfg = await resolveCloudflareConfig(db, domain.full_domain);
 
   if (!cfg) {
     await db
@@ -211,7 +211,7 @@ export async function renewDomainSsl(
   },
 ): Promise<boolean> {
   const now = new Date();
-  const cfg = getCloudflareConfig();
+  const cfg = await resolveCloudflareConfig(db, domain.full_domain);
   if (!cfg) {
     throw new Error(
       "Cloudflare is not configured (missing CLOUDFLARE_API_TOKEN / CLOUDFLARE_ZONE_ID).",
