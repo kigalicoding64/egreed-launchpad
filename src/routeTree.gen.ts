@@ -9,52 +9,33 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
-import { Route as AuthRouteImport } from './routes/auth'
-import { Route as DocsRouteImport } from './routes/docs'
-import { Route as FeaturesRouteImport } from './routes/features'
-import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
-import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
-import { Route as AuthenticatedDeployRouteImport } from './routes/_authenticated/deploy'
-import { Route as AuthenticatedDeploymentsRouteImport } from './routes/_authenticated/deployments'
-import { Route as AuthenticatedDomainsRouteImport } from './routes/_authenticated/domains'
-import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
-import { Route as AuthenticatedSslRouteImport } from './routes/_authenticated/ssl'
+import { Route as PricingRouteImport } from './routes/pricing'
+import { Route as FeaturesRouteImport } from './routes/features'
+import { Route as DocsRouteImport } from './routes/docs'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as IndexRouteImport } from './routes/index'
 import { Route as HostedSubdomainRouteImport } from './routes/hosted.$subdomain'
-import { Route as AuthenticatedIdeIdRouteImport } from './routes/_authenticated/ide.$id'
+import { Route as AuthenticatedSslRouteImport } from './routes/_authenticated/ssl'
+import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedDomainsRouteImport } from './routes/_authenticated/domains'
+import { Route as AuthenticatedDeploymentsRouteImport } from './routes/_authenticated/deployments'
+import { Route as AuthenticatedDeployRouteImport } from './routes/_authenticated/deploy'
+import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedProjectsIndexRouteImport } from './routes/_authenticated/projects.index'
-import { Route as AuthenticatedProjectsIdRouteImport } from './routes/_authenticated/projects.$id'
 import { Route as AuthenticatedWorkspaceIdRouteImport } from './routes/_authenticated/workspace.$id'
-import { Route as ApiPublicHooksEdgeSyncRouteImport } from './routes/api/public/hooks/edge-sync'
-import { Route as ApiPublicHooksSslRenewRouteImport } from './routes/api/public/hooks/ssl-renew'
+import { Route as AuthenticatedProjectsIdRouteImport } from './routes/_authenticated/projects.$id'
+import { Route as AuthenticatedIdeIdRouteImport } from './routes/_authenticated/ide.$id'
 import { Route as ApiPublicWebhooksGithubRouteImport } from './routes/api/public/webhooks/github'
-import { Route as ApiPublicAuthEgreedCallbackRouteImport } from './routes/api/public/auth/egreed/callback'
+import { Route as ApiPublicHooksSslRenewRouteImport } from './routes/api/public/hooks/ssl-renew'
+import { Route as ApiPublicHooksEdgeSyncRouteImport } from './routes/api/public/hooks/edge-sync'
 import { Route as ApiPublicAuthEgreedStartRouteImport } from './routes/api/public/auth/egreed/start'
+import { Route as ApiPublicAuthEgreedCallbackRouteImport } from './routes/api/public/auth/egreed/callback'
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
-  id: '/_authenticated',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthRoute = AuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DocsRoute = DocsRouteImport.update({
-  id: '/docs',
-  path: '/docs',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const FeaturesRoute = FeaturesRouteImport.update({
-  id: '/features',
-  path: '/features',
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PricingRoute = PricingRouteImport.update({
@@ -62,19 +43,48 @@ const PricingRoute = PricingRouteImport.update({
   path: '/pricing',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
-  id: '/sitemap.xml',
-  path: '/sitemap.xml',
+const FeaturesRoute = FeaturesRouteImport.update({
+  id: '/features',
+  path: '/features',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
+const DocsRoute = DocsRouteImport.update({
+  id: '/docs',
+  path: '/docs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HostedSubdomainRoute = HostedSubdomainRouteImport.update({
+  id: '/hosted/$subdomain',
+  path: '/hosted/$subdomain',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedSslRoute = AuthenticatedSslRouteImport.update({
+  id: '/ssl',
+  path: '/ssl',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedDeployRoute = AuthenticatedDeployRouteImport.update({
-  id: '/deploy',
-  path: '/deploy',
+const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedDomainsRoute = AuthenticatedDomainsRouteImport.update({
+  id: '/domains',
+  path: '/domains',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedDeploymentsRoute =
@@ -83,29 +93,14 @@ const AuthenticatedDeploymentsRoute =
     path: '/deployments',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedDomainsRoute = AuthenticatedDomainsRouteImport.update({
-  id: '/domains',
-  path: '/domains',
+const AuthenticatedDeployRoute = AuthenticatedDeployRouteImport.update({
+  id: '/deploy',
+  path: '/deploy',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedSslRoute = AuthenticatedSslRouteImport.update({
-  id: '/ssl',
-  path: '/ssl',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const HostedSubdomainRoute = HostedSubdomainRouteImport.update({
-  id: '/hosted/$subdomain',
-  path: '/hosted/$subdomain',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthenticatedIdeIdRoute = AuthenticatedIdeIdRouteImport.update({
-  id: '/ide/$id',
-  path: '/ide/$id',
+const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedProjectsIndexRoute =
@@ -114,20 +109,25 @@ const AuthenticatedProjectsIndexRoute =
     path: '/projects/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedProjectsIdRoute = AuthenticatedProjectsIdRouteImport.update({
-  id: '/projects/$id',
-  path: '/projects/$id',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedWorkspaceIdRoute =
   AuthenticatedWorkspaceIdRouteImport.update({
     id: '/workspace/$id',
     path: '/workspace/$id',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const ApiPublicHooksEdgeSyncRoute = ApiPublicHooksEdgeSyncRouteImport.update({
-  id: '/api/public/hooks/edge-sync',
-  path: '/api/public/hooks/edge-sync',
+const AuthenticatedProjectsIdRoute = AuthenticatedProjectsIdRouteImport.update({
+  id: '/projects/$id',
+  path: '/projects/$id',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedIdeIdRoute = AuthenticatedIdeIdRouteImport.update({
+  id: '/ide/$id',
+  path: '/ide/$id',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const ApiPublicWebhooksGithubRoute = ApiPublicWebhooksGithubRouteImport.update({
+  id: '/api/public/webhooks/github',
+  path: '/api/public/webhooks/github',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicHooksSslRenewRoute = ApiPublicHooksSslRenewRouteImport.update({
@@ -135,21 +135,21 @@ const ApiPublicHooksSslRenewRoute = ApiPublicHooksSslRenewRouteImport.update({
   path: '/api/public/hooks/ssl-renew',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiPublicWebhooksGithubRoute = ApiPublicWebhooksGithubRouteImport.update({
-  id: '/api/public/webhooks/github',
-  path: '/api/public/webhooks/github',
+const ApiPublicHooksEdgeSyncRoute = ApiPublicHooksEdgeSyncRouteImport.update({
+  id: '/api/public/hooks/edge-sync',
+  path: '/api/public/hooks/edge-sync',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiPublicAuthEgreedCallbackRoute =
-  ApiPublicAuthEgreedCallbackRouteImport.update({
-    id: '/api/public/auth/egreed/callback',
-    path: '/api/public/auth/egreed/callback',
-    getParentRoute: () => rootRouteImport,
-  } as any)
 const ApiPublicAuthEgreedStartRoute =
   ApiPublicAuthEgreedStartRouteImport.update({
     id: '/api/public/auth/egreed/start',
     path: '/api/public/auth/egreed/start',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicAuthEgreedCallbackRoute =
+  ApiPublicAuthEgreedCallbackRouteImport.update({
+    id: '/api/public/auth/egreed/callback',
+    path: '/api/public/auth/egreed/callback',
     getParentRoute: () => rootRouteImport,
   } as any)
 
@@ -321,39 +321,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated': {
-      id: '/_authenticated'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof AuthenticatedRouteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/docs': {
-      id: '/docs'
-      path: '/docs'
-      fullPath: '/docs'
-      preLoaderRoute: typeof DocsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/features': {
-      id: '/features'
-      path: '/features'
-      fullPath: '/features'
-      preLoaderRoute: typeof FeaturesRouteImport
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/pricing': {
@@ -363,39 +335,53 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PricingRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/sitemap.xml': {
-      id: '/sitemap.xml'
-      path: '/sitemap.xml'
-      fullPath: '/sitemap.xml'
-      preLoaderRoute: typeof SitemapDotxmlRouteImport
+    '/features': {
+      id: '/features'
+      path: '/features'
+      fullPath: '/features'
+      preLoaderRoute: typeof FeaturesRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/dashboard': {
-      id: '/_authenticated/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+    '/docs': {
+      id: '/docs'
+      path: '/docs'
+      fullPath: '/docs'
+      preLoaderRoute: typeof DocsRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/deploy': {
-      id: '/_authenticated/deploy'
-      path: '/deploy'
-      fullPath: '/deploy'
-      preLoaderRoute: typeof AuthenticatedDeployRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/deployments': {
-      id: '/_authenticated/deployments'
-      path: '/deployments'
-      fullPath: '/deployments'
-      preLoaderRoute: typeof AuthenticatedDeploymentsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/domains': {
-      id: '/_authenticated/domains'
-      path: '/domains'
-      fullPath: '/domains'
-      preLoaderRoute: typeof AuthenticatedDomainsRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/hosted/$subdomain': {
+      id: '/hosted/$subdomain'
+      path: '/hosted/$subdomain'
+      fullPath: '/hosted/$subdomain'
+      preLoaderRoute: typeof HostedSubdomainRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/ssl': {
+      id: '/_authenticated/ssl'
+      path: '/ssl'
+      fullPath: '/ssl'
+      preLoaderRoute: typeof AuthenticatedSslRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/settings': {
@@ -405,25 +391,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/ssl': {
-      id: '/_authenticated/ssl'
-      path: '/ssl'
-      fullPath: '/ssl'
-      preLoaderRoute: typeof AuthenticatedSslRouteImport
+    '/_authenticated/domains': {
+      id: '/_authenticated/domains'
+      path: '/domains'
+      fullPath: '/domains'
+      preLoaderRoute: typeof AuthenticatedDomainsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/hosted/$subdomain': {
-      id: '/hosted/$subdomain'
-      path: '/hosted/$subdomain'
-      fullPath: '/hosted/$subdomain'
-      preLoaderRoute: typeof HostedSubdomainRouteImport
-      parentRoute: typeof rootRouteImport
+    '/_authenticated/deployments': {
+      id: '/_authenticated/deployments'
+      path: '/deployments'
+      fullPath: '/deployments'
+      preLoaderRoute: typeof AuthenticatedDeploymentsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/ide/$id': {
-      id: '/_authenticated/ide/$id'
-      path: '/ide/$id'
-      fullPath: '/ide/$id'
-      preLoaderRoute: typeof AuthenticatedIdeIdRouteImport
+    '/_authenticated/deploy': {
+      id: '/_authenticated/deploy'
+      path: '/deploy'
+      fullPath: '/deploy'
+      preLoaderRoute: typeof AuthenticatedDeployRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/dashboard': {
+      id: '/_authenticated/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/projects/': {
@@ -433,13 +426,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProjectsIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/projects/$id': {
-      id: '/_authenticated/projects/$id'
-      path: '/projects/$id'
-      fullPath: '/projects/$id'
-      preLoaderRoute: typeof AuthenticatedProjectsIdRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/workspace/$id': {
       id: '/_authenticated/workspace/$id'
       path: '/workspace/$id'
@@ -447,11 +433,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedWorkspaceIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/api/public/hooks/edge-sync': {
-      id: '/api/public/hooks/edge-sync'
-      path: '/api/public/hooks/edge-sync'
-      fullPath: '/api/public/hooks/edge-sync'
-      preLoaderRoute: typeof ApiPublicHooksEdgeSyncRouteImport
+    '/_authenticated/projects/$id': {
+      id: '/_authenticated/projects/$id'
+      path: '/projects/$id'
+      fullPath: '/projects/$id'
+      preLoaderRoute: typeof AuthenticatedProjectsIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/ide/$id': {
+      id: '/_authenticated/ide/$id'
+      path: '/ide/$id'
+      fullPath: '/ide/$id'
+      preLoaderRoute: typeof AuthenticatedIdeIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/api/public/webhooks/github': {
+      id: '/api/public/webhooks/github'
+      path: '/api/public/webhooks/github'
+      fullPath: '/api/public/webhooks/github'
+      preLoaderRoute: typeof ApiPublicWebhooksGithubRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/hooks/ssl-renew': {
@@ -461,18 +461,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksSslRenewRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/webhooks/github': {
-      id: '/api/public/webhooks/github'
-      path: '/api/public/webhooks/github'
-      fullPath: '/api/public/webhooks/github'
-      preLoaderRoute: typeof ApiPublicWebhooksGithubRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/auth/egreed/callback': {
-      id: '/api/public/auth/egreed/callback'
-      path: '/api/public/auth/egreed/callback'
-      fullPath: '/api/public/auth/egreed/callback'
-      preLoaderRoute: typeof ApiPublicAuthEgreedCallbackRouteImport
+    '/api/public/hooks/edge-sync': {
+      id: '/api/public/hooks/edge-sync'
+      path: '/api/public/hooks/edge-sync'
+      fullPath: '/api/public/hooks/edge-sync'
+      preLoaderRoute: typeof ApiPublicHooksEdgeSyncRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/auth/egreed/start': {
@@ -480,6 +473,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/auth/egreed/start'
       fullPath: '/api/public/auth/egreed/start'
       preLoaderRoute: typeof ApiPublicAuthEgreedStartRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/auth/egreed/callback': {
+      id: '/api/public/auth/egreed/callback'
+      path: '/api/public/auth/egreed/callback'
+      fullPath: '/api/public/auth/egreed/callback'
+      preLoaderRoute: typeof ApiPublicAuthEgreedCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
