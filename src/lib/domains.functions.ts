@@ -150,6 +150,7 @@ export const addDomain = createServerFn({ method: "POST" })
 
     const { slugify } = await import("@/lib/egreed");
     const { getActiveRootDomainFromDb } = await import("@/lib/cloudflare.server");
+    const client = supabase as unknown as { from: (t: string) => any };
     const ROOT_DOMAIN = await getActiveRootDomainFromDb(client);
     // A bare label is treated as a platform subdomain.
     const fullDomain = data.domain.includes(".")
@@ -160,7 +161,6 @@ export const addDomain = createServerFn({ method: "POST" })
       ? fullDomain.slice(0, -(ROOT_DOMAIN.length + 1))
       : slugify(fullDomain);
 
-    const client = supabase as unknown as { from: (t: string) => any };
 
     const { data: existing } = await client
       .from("domains")
