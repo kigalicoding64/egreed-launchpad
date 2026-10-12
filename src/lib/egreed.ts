@@ -303,9 +303,18 @@ export function slugify(input: string): string {
     .slice(0, 40);
 }
 
-export function subdomainFor(name: string): string {
+/** Platform root domain chosen by an admin (falls back to ROOT_DOMAIN). */
+let activeRootDomain = ROOT_DOMAIN;
+export function setActiveRootDomain(domain: string | null | undefined) {
+  activeRootDomain = domain || ROOT_DOMAIN;
+}
+export function getActiveRootDomain() {
+  return activeRootDomain;
+}
+
+export function subdomainFor(name: string, root: string = activeRootDomain): string {
   const slug = slugify(name) || "app";
-  return `${slug}.${ROOT_DOMAIN}`;
+  return `${slug}.${root}`;
 }
 
 /* ---------- Status metadata ---------- */

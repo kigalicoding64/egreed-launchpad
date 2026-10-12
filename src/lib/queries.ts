@@ -1,3 +1,9 @@
+import {
+  addPlatformDomain,
+  activatePlatformDomain,
+  recheckPlatformDomain,
+  removePlatformDomain,
+} from "@/lib/platform-domains.functions";
 import { useCallback, useEffect, useId, useState } from "react";
 import {
   useMutation,
@@ -13,6 +19,8 @@ import { generateEnvChecklist } from "@/lib/ai.functions";
 import {
   buildLogsFor,
   subdomainFor,
+  setActiveRootDomain,
+  getActiveRootDomain,
   slugify,
   frameworkMeta,
   DNS_TARGET,
@@ -573,6 +581,56 @@ export function useAddDomain() {
     },
   });
 }
+
+/* ---------------- Platform domains (admin-managed root domains) ---------------- */
+
+export interface PlatformDomain {
+  id: string;
+  domain: string;
+  zone_id: string | null;
+  status: string;
+  nameservers: string[];
+  is_active: boolean;
+  last_error: string | null;
+  created_at: string;
+}
+
+export function usePlatformDomains() {
+  return useQuery({
+    queryKey: ["platform-domains"],
+    queryFn: async (): Promise<PlatformDomain[]> => {
+      const { data, error } = await db.from("platform_domains").select("*").order("created_at");
+      if (error) throw error;
+      const rows = (data ?? []) as PlatformDomain[];
+      setActiveRootDomain(rows.find((r) => r.is_active)?.domain);
+      return rows;
+    },
+    staleTime: 60_000,
+  });
+}
+
+/** The current main platform domain (e.g. egreedtech.org). */
+export function useRootDomain(): string {
+  const { data } = usePlatformDomains();
+  return data?.find((r) => r.is_active)?.domain ?? getActiveRootDomain();
+}
+
+function usePlatformMutation<I>(fn: (args: { data: I }) => Promise<unknown>) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: I) => fn({ data: input }) as Promise<any>,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["platform-domains"] });
+      qc.invalidateQueries({ queryKey: ["domains"] });
+      qc.invalidateQueries({ queryKey: ["projects"] });
+    },
+  });
+}
+export const useAddPlatformDomain = () => usePlatformMutation<{ domain: string }>(useServerFn(addPlatformDomain));
+export const useRecheckPlatformDomain = () => usePlatformMutation<{ id: string }>(useServerFn(recheckPlatformDomain));
+export const useActivatePlatformDomain = () =>
+  usePlatformMutation<{ id: string; migrate?: boolean }>(useServerFn(activatePlatformDomain));
+export const useRemovePlatformDomain = () => usePlatformMutation<{ id: string }>(useServerFn(removePlatformDomain));
 
 /* ---------------- Env vars ---------------- */
 

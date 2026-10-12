@@ -218,6 +218,45 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_domains: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          domain: string
+          id: string
+          is_active: boolean
+          last_error: string | null
+          nameservers: string[]
+          status: string
+          updated_at: string
+          zone_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          domain: string
+          id?: string
+          is_active?: boolean
+          last_error?: string | null
+          nameservers?: string[]
+          status?: string
+          updated_at?: string
+          zone_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          domain?: string
+          id?: string
+          is_active?: boolean
+          last_error?: string | null
+          nameservers?: string[]
+          status?: string
+          updated_at?: string
+          zone_id?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null

@@ -42,7 +42,12 @@ export const provisionDomain = createServerFn({ method: "POST" })
           user_id: userId,
           project_id: project.id,
           subdomain: slugify(project.name) || "app",
-          full_domain: project.domain ?? subdomainFor(project.name),
+          full_domain:
+            project.domain ??
+            subdomainFor(
+              project.name,
+              await (await import("@/lib/cloudflare.server")).getActiveRootDomainFromDb(client),
+            ),
           ssl_status: "pending",
           dns_status: "pending",
           dns_type: "CNAME",
@@ -143,7 +148,10 @@ export const addDomain = createServerFn({ method: "POST" })
     if (pErr) throw pErr;
     if (!project) throw new Error("Project not found");
 
-    const { ROOT_DOMAIN, slugify } = await import("@/lib/egreed");
+    const { slugify } = await import("@/lib/egreed");
+    const { getActiveRootDomainFromDb } = await import("@/lib/cloudflare.server");
+    const client = supabase as unknown as { from: (t: string) => any };
+    const ROOT_DOMAIN = await getActiveRootDomainFromDb(client);
     // A bare label is treated as a platform subdomain.
     const fullDomain = data.domain.includes(".")
       ? data.domain
@@ -153,7 +161,6 @@ export const addDomain = createServerFn({ method: "POST" })
       ? fullDomain.slice(0, -(ROOT_DOMAIN.length + 1))
       : slugify(fullDomain);
 
-    const client = supabase as unknown as { from: (t: string) => any };
 
     const { data: existing } = await client
       .from("domains")
