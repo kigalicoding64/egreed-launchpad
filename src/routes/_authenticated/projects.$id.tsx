@@ -145,6 +145,11 @@ function ProjectDetail() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="hero" asChild>
+            <Link to="/ide/$id" params={{ id: project.id }}>
+              <Code2 className="h-4 w-4" /> Code Studio
+            </Link>
+          </Button>
           <Button variant="outline" asChild>
             <Link to="/workspace/$id" params={{ id: project.id }}>
               <Code2 className="h-4 w-4" /> Open workspace
