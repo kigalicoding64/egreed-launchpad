@@ -28,10 +28,12 @@ import {
   useDomains,
   useIsAdmin,
   useProjects,
+  useRootDomain,
   useRefreshDomain,
   useSyncEdgeRouting,
 } from "@/lib/queries";
-import { SSL_STATUS_META, DNS_STATUS_META, ROOT_DOMAIN } from "@/lib/egreed";
+import { SSL_STATUS_META, DNS_STATUS_META } from "@/lib/egreed";
+import { PlatformDomainsAdmin } from "@/components/dashboard/PlatformDomainsAdmin";
 
 
 export const Route = createFileRoute("/_authenticated/domains")({
@@ -42,6 +44,7 @@ function DomainsPage() {
   const { data: domains, isLoading } = useDomains();
   const { data: projects } = useProjects();
   const { data: isAdmin } = useIsAdmin();
+  const ROOT_DOMAIN = useRootDomain();
   const refresh = useRefreshDomain();
   const syncEdge = useSyncEdgeRouting();
   const addDomain = useAddDomain();
@@ -113,6 +116,8 @@ function DomainsPage() {
           </Button>
         )}
       </div>
+
+      {isAdmin && <PlatformDomainsAdmin />}
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
