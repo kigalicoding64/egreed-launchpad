@@ -132,13 +132,12 @@ export const addDomain = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
 
-    const { data: roles, error: rErr } = await supabase
+    const { data: roles } = await supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", userId)
       .eq("role", "admin");
-    if (rErr) throw rErr;
-    if (!roles?.length) throw new Error("Only admins can add domains");
+    const isAdmin = !!roles?.length;
 
     const { data: project, error: pErr } = await supabase
       .from("projects")
@@ -147,6 +146,10 @@ export const addDomain = createServerFn({ method: "POST" })
       .maybeSingle();
     if (pErr) throw pErr;
     if (!project) throw new Error("Project not found");
+    if (!isAdmin && project.user_id !== userId) throw new Error("Project not found");
+    if (!isAdmin && !data.domain.includes(".")) {
+      throw new Error("Enter your full domain (e.g. app.mycompany.com)");
+    }
 
     const { slugify } = await import("@/lib/egreed");
     const { getActiveRootDomainFromDb } = await import("@/lib/cloudflare.server");
@@ -194,6 +197,10 @@ export const addDomain = createServerFn({ method: "POST" })
     }
 
     if (!isPlatform) {
+      await client
+        .from("domains")
+        .update({ dns_target: `ingress.${ROOT_DOMAIN}` })
+        .eq("id", created.id);
       return {
         ok: true,
         domain: created,
@@ -205,8 +212,59 @@ export const addDomain = createServerFn({ method: "POST" })
         ],
       };
     }
+    if (!isAdmin) throw new Error("Only admins can add platform subdomains");
 
     const { provisionDnsAndSsl } = await import("@/lib/deploy-engine.server");
     const logs = await provisionDnsAndSsl(client, created);
     return { ok: true, domain: created, external: false, logs };
+  });
+
+/** Check public DNS for a user's custom domain and mark it active when it points at EGREED. */
+export const verifyCustomDomain = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: { domainId: string }) => {
+    if (!data?.domainId) throw new Error("domainId is required");
+    return data;
+  })
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const client = supabase as unknown as { from: (t: string) => any };
+    const { data: d } = await client
+      .from("domains")
+      .select("id, full_domain, dns_target, user_id")
+      .eq("id", data.domainId)
+      .maybeSingle();
+    if (!d || d.user_id !== userId) throw new Error("Domain not found");
+    const { getActiveRootDomainFromDb } = await import("@/lib/cloudflare.server");
+    const root = await getActiveRootDomainFromDb(client);
+    const target = (d.dns_target ?? `ingress.${root}`).toLowerCase();
+
+    const q = async (type: string) => {
+      const r = await fetch(
+        `https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(d.full_domain)}&type=${type}`,
+        { headers: { accept: "application/dns-json" } },
+      );
+      const j = (await r.json()) as { Answer?: { data: string }[] };
+      return (j.Answer ?? []).map((a) => a.data.replace(/\.$/, "").toLowerCase());
+    };
+    const cnames = await q("CNAME");
+    const ok = cnames.some((c) => c === target || c.endsWith(`.${root}`) || c === root);
+    const now = new Date().toISOString();
+    await client
+      .from("domains")
+      .update(
+        ok
+          ? { dns_status: "active", ssl_status: "active", last_checked_at: now, ssl_provisioned_at: now }
+          : { dns_status: "pending", last_checked_at: now },
+      )
+      .eq("id", d.id);
+    return {
+      ok,
+      found: cnames,
+      message: ok
+        ? `${d.full_domain} points to EGREED — connected with HTTPS.`
+        : cnames.length
+          ? `${d.full_domain} points to ${cnames.join(", ")} — change it to ${target}.`
+          : `No CNAME found yet for ${d.full_domain}. DNS can take up to 48 hours.`,
+    };
   });
