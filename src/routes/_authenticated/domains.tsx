@@ -48,6 +48,8 @@ function DomainsPage() {
   const refresh = useRefreshDomain();
   const syncEdge = useSyncEdgeRouting();
   const addDomain = useAddDomain();
+  const verify = useVerifyCustomDomain();
+  const [setup, setSetup] = useState<{ domain: string; host: string } | null>(null);
 
   const [open, setOpen] = useState(false);
   const [projectId, setProjectId] = useState("");
@@ -60,9 +62,13 @@ function DomainsPage() {
     addDomain.mutate(
       { projectId, domain: domainInput, primary },
       {
-        onSuccess: (r: { external: boolean; logs: string[] }) => {
-          toast.success(r.external ? "Custom domain added — add the CNAME at your registrar" : "Domain added and provisioning started");
-          if (r.external) toast.info(r.logs[1]);
+        onSuccess: (r: { external: boolean; logs: string[]; domain: { full_domain: string } }) => {
+          toast.success(r.external ? "Domain added — now configure your registrar" : "Domain added and provisioning started");
+          if (r.external) {
+            const fd = r.domain.full_domain;
+            const parts = fd.split(".");
+            setSetup({ domain: fd, host: parts.length > 2 ? parts.slice(0, -2).join(".") : "@" });
+          }
           setOpen(false);
           setDomainInput("");
           setPrimary(false);
@@ -117,13 +123,52 @@ function DomainsPage() {
 
       {isAdmin && <PlatformDomainsAdmin />}
 
+      <Dialog open={!!setup} onOpenChange={(o) => !o && setSetup(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Configure your registrar</DialogTitle>
+            <DialogDescription>
+              Sign in where you bought <span className="font-mono">{setup?.domain}</span> (GoDaddy,
+              Namecheap, Cloudflare, Google, etc.), open its DNS settings and add this record.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-3 gap-3 rounded-xl bg-background/50 p-4 font-mono text-xs">
+            <div><p className="text-muted-foreground">Type</p><p className="text-foreground">CNAME</p></div>
+            <div><p className="text-muted-foreground">Name / Host</p><p className="break-all text-foreground">{setup?.host}</p></div>
+            <div><p className="text-muted-foreground">Value / Target</p><p className="break-all text-foreground">ingress.{ROOT_DOMAIN}</p></div>
+          </div>
+          <ul className="list-disc space-y-1 pl-5 text-xs text-muted-foreground">
+            <li>Delete any existing A, AAAA or CNAME record for the same name first.</li>
+            <li>For a root domain (mycompany.com) use CNAME flattening / ALIAS if your registrar supports it, or connect <span className="font-mono">www</span> instead.</li>
+            <li>If you use Cloudflare, set the record to "DNS only" (grey cloud).</li>
+            <li>Changes usually apply within minutes, up to 48 hours. Then press Verify.</li>
+          </ul>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                navigator.clipboard?.writeText(`ingress.${ROOT_DOMAIN}`);
+                toast.success("Target copied");
+              }}
+            >
+              Copy target
+            </Button>
+            <Button variant="hero" onClick={() => setSetup(null)}>Done</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add a domain</DialogTitle>
+            <DialogTitle>Connect a domain</DialogTitle>
             <DialogDescription>
-              Enter a label for a platform subdomain (e.g. <span className="font-mono">shop</span> →{" "}
-              <span className="font-mono">shop.{ROOT_DOMAIN}</span>) or a full custom domain you own.
+              Bring a domain you own from any registrar. Enter the full domain, e.g.{" "}
+              <span className="font-mono">app.mycompany.com</span>
+              {isAdmin && (
+                <> — admins can also enter a label like <span className="font-mono">shop</span> for{" "}
+                <span className="font-mono">shop.{ROOT_DOMAIN}</span></>
+              )}.
             </DialogDescription>
           </DialogHeader>
 
