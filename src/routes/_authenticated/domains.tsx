@@ -109,12 +109,10 @@ function DomainsPage() {
           )}
           Sync edge routing
         </Button>
-        {isAdmin && (
-          <Button size="sm" variant="hero" onClick={() => setOpen(true)}>
-            <Plus className="h-4 w-4" />
-            Add domain
-          </Button>
-        )}
+        <Button size="sm" variant="hero" onClick={() => setOpen(true)}>
+          <Plus className="h-4 w-4" />
+          Connect your domain
+        </Button>
       </div>
 
       {isAdmin && <PlatformDomainsAdmin />}
