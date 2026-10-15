@@ -13,7 +13,22 @@ import {
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { triggerDeployment } from "@/lib/deployments.functions";
-import { addDomain, provisionDomain, refreshDomain, syncEdgeRouting } from "@/lib/domains.functions";
+import {
+  addDomain,
+  provisionDomain,
+  refreshDomain,
+  syncEdgeRouting,
+  verifyCustomDomain,
+} from "@/lib/domains.functions";
+
+export function useVerifyCustomDomain() {
+  const qc = useQueryClient();
+  const fn = useServerFn(verifyCustomDomain);
+  return useMutation({
+    mutationFn: async (domainId: string) => fn({ data: { domainId } }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["domains"] }),
+  });
+}
 import { rebuildPreview } from "@/lib/preview.functions";
 import { generateEnvChecklist } from "@/lib/ai.functions";
 import {
