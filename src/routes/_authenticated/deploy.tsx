@@ -34,6 +34,7 @@ import {
   useGithubConnection,
   useConnectGithub,
   useDeployProject,
+  useRootDomain,
 } from "@/lib/queries";
 import {
   SAMPLE_REPOS,
@@ -55,6 +56,7 @@ export const Route = createFileRoute("/_authenticated/deploy")({
 type Step = 0 | 1 | 2;
 
 function DeployWizard() {
+  const rootDomain = useRootDomain();
   const navigate = useNavigate();
   const { data: gh, isLoading } = useGithubConnection();
   const connect = useConnectGithub();
