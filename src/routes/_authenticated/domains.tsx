@@ -31,6 +31,7 @@ import {
   useRootDomain,
   useRefreshDomain,
   useSyncEdgeRouting,
+  useVerifyCustomDomain,
 } from "@/lib/queries";
 import { SSL_STATUS_META, DNS_STATUS_META } from "@/lib/egreed";
 import { PlatformDomainsAdmin } from "@/components/dashboard/PlatformDomainsAdmin";
