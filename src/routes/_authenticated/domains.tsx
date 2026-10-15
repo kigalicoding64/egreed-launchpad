@@ -286,14 +286,32 @@ function DomainsPage() {
                   </Link>
                   <StatusBadge tone={dns.tone} label={dns.label} pulse={d.dns_status === "active"} />
                   <StatusBadge tone={ssl.tone} label={ssl.label} pulse={d.ssl_status === "active"} />
-                  <div className="sm:text-right">
+                  <div className="flex items-center gap-2 sm:justify-end">
+                    {!d.full_domain.endsWith(`.${ROOT_DOMAIN}`) && (
+                      <button
+                        onClick={() => {
+                          const parts = d.full_domain.split(".");
+                          setSetup({ domain: d.full_domain, host: parts.length > 2 ? parts.slice(0, -2).join(".") : "@" });
+                        }}
+                        className="text-xs text-primary hover:underline"
+                      >
+                        Setup
+                      </button>
+                    )}
                     <button
                       onClick={() =>
-                        refresh.mutate(d.id, {
-                          onSuccess: () => toast.success("DNS re-checked & SSL renewed"),
-                          onError: (e) =>
-                            toast.error(e instanceof Error ? e.message : "Refresh failed"),
-                        })
+                        d.full_domain.endsWith(`.${ROOT_DOMAIN}`)
+                          ? refresh.mutate(d.id, {
+                              onSuccess: () => toast.success("DNS re-checked & SSL renewed"),
+                              onError: (e) =>
+                                toast.error(e instanceof Error ? e.message : "Refresh failed"),
+                            })
+                          : verify.mutate(d.id, {
+                              onSuccess: (r: { ok: boolean; message: string }) =>
+                                r.ok ? toast.success(r.message) : toast.warning(r.message),
+                              onError: (e) =>
+                                toast.error(e instanceof Error ? e.message : "Verify failed"),
+                            })
                       }
                       disabled={refresh.isPending}
                       className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
