@@ -303,16 +303,21 @@ export function slugify(input: string): string {
     .slice(0, 40);
 }
 
-/** Platform root domain chosen by an admin (falls back to ROOT_DOMAIN). */
-let activeRootDomain = ROOT_DOMAIN;
+/**
+ * Platform root domain chosen by an admin in platform_domains. There is no
+ * hardcoded default: with no active domain, subdomain creation fails with a
+ * friendly error until an admin configures one on the Domains page.
+ */
+let activeRootDomain: string | null = null;
 export function setActiveRootDomain(domain: string | null | undefined) {
-  activeRootDomain = domain || ROOT_DOMAIN;
+  activeRootDomain = domain || null;
 }
-export function getActiveRootDomain() {
+export function getActiveRootDomain(): string | null {
   return activeRootDomain;
 }
 
-export function subdomainFor(name: string, root: string = activeRootDomain): string {
+export function subdomainFor(name: string, root: string | null = activeRootDomain): string | null {
+  if (!root) return null;
   const slug = slugify(name) || "app";
   return `${slug}.${root}`;
 }

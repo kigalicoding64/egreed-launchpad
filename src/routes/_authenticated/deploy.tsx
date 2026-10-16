@@ -442,7 +442,9 @@ function DeployWizard() {
                 <Label htmlFor="pname">Project name</Label>
                 <Input id="pname" value={name} onChange={(e) => setName(e.target.value)} />
                 <p className="font-mono text-xs text-primary">
-                  → {subdomainFor(name || repo?.name || "app", rootDomain)}
+                  {rootDomain
+                    ? `→ ${subdomainFor(name || repo?.name || "app", rootDomain)}`
+                    : "→ main platform domain not configured yet"}
                 </p>
               </div>
 

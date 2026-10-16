@@ -2,7 +2,7 @@
 // Advances a deployment record through the DEPLOY_PHASES state machine, writing
 // status / progress / build_logs to the database (streamed to the UI via realtime).
 // Import dynamically inside server handlers/server functions only.
-import { DEPLOY_PHASES, DNS_TARGET, slugify, subdomainFor } from "@/lib/egreed";
+import { DEPLOY_PHASES, slugify, subdomainFor } from "@/lib/egreed";
 import { getActiveRootDomainFromDb, resolveCloudflareConfig, upsertCnameRecord } from "@/lib/cloudflare.server";
 
 // Loose client shape — works with both the admin client and the RLS user client.
@@ -12,6 +12,12 @@ const SSL_VALIDITY_DAYS = 90;
 
 function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
+}
+
+/** CNAME target for a hostname: the platform ingress under its own root domain. */
+function ingressTargetFor(fullDomain: string, root: string | null): string {
+  if (root && fullDomain.endsWith(`.${root}`)) return `ingress.${root}`;
+  return `ingress.${fullDomain.split(".").slice(1).join(".")}`;
 }
 
 interface DomainRow {
@@ -33,7 +39,13 @@ async function ensureDomain(
     .maybeSingle();
   if (existing) return existing as DomainRow;
 
-  const full = project.domain ?? subdomainFor(project.name, await getActiveRootDomainFromDb(db));
+  const root = await getActiveRootDomainFromDb(db);
+  const full = project.domain ?? subdomainFor(project.name, root);
+  if (!full) {
+    throw new Error(
+      "No main platform domain is configured yet — an admin must add one on the Domains page before deploying.",
+    );
+  }
   const sub = slugify(project.name) || "app";
   const { data: created, error } = await db
     .from("domains")
@@ -65,12 +77,13 @@ export async function provisionDnsAndSsl(db: DbClient, domain: DomainRow): Promi
   const logs: string[] = [];
   const now = new Date();
   const cfg = await resolveCloudflareConfig(db, domain.full_domain);
+  const target = ingressTargetFor(domain.full_domain, await getActiveRootDomainFromDb(db));
 
   if (!cfg) {
     await db
       .from("domains")
       .update({
-        dns_target: DNS_TARGET,
+        dns_target: target,
         dns_status: "pending",
         ssl_status: "pending",
         last_checked_at: now.toISOString(),
@@ -83,7 +96,7 @@ export async function provisionDnsAndSsl(db: DbClient, domain: DomainRow): Promi
 
   let rec: { recordId: string; proxied: boolean };
   try {
-    rec = await upsertCnameRecord(cfg, domain.full_domain, DNS_TARGET);
+    rec = await upsertCnameRecord(cfg, domain.full_domain, target);
   } catch (err) {
     await db
       .from("domains")
@@ -101,7 +114,7 @@ export async function provisionDnsAndSsl(db: DbClient, domain: DomainRow): Promi
     .from("domains")
     .update({
       cloudflare_record_id: rec.recordId,
-      dns_target: DNS_TARGET,
+      dns_target: target,
       dns_status: "active",
       ssl_status: "active",
       ssl_provisioned_at: now.toISOString(),
@@ -110,7 +123,7 @@ export async function provisionDnsAndSsl(db: DbClient, domain: DomainRow): Promi
     })
     .eq("id", domain.id);
 
-  logs.push(`✓ CNAME ${domain.full_domain} → ${DNS_TARGET} (Cloudflare, proxied)`);
+  logs.push(`✓ CNAME ${domain.full_domain} → ${target} (Cloudflare, proxied)`);
   logs.push(`✓ SSL certificate provisioned — HTTPS ready (auto-renews)`);
   return logs;
 }
@@ -212,6 +225,7 @@ export async function renewDomainSsl(
 ): Promise<boolean> {
   const now = new Date();
   const cfg = await resolveCloudflareConfig(db, domain.full_domain);
+  const target = ingressTargetFor(domain.full_domain, await getActiveRootDomainFromDb(db));
   if (!cfg) {
     throw new Error(
       "Cloudflare is not configured (missing CLOUDFLARE_API_TOKEN / CLOUDFLARE_ZONE_ID).",
@@ -221,7 +235,7 @@ export async function renewDomainSsl(
   // Ensure the DNS record still exists (recreates if missing), then extend SSL.
   let rec: { recordId: string; proxied: boolean };
   try {
-    rec = await upsertCnameRecord(cfg, domain.full_domain, DNS_TARGET);
+    rec = await upsertCnameRecord(cfg, domain.full_domain, target);
   } catch (err) {
     await db
       .from("domains")
@@ -235,7 +249,7 @@ export async function renewDomainSsl(
     .from("domains")
     .update({
       cloudflare_record_id: rec.recordId,
-      dns_target: DNS_TARGET,
+      dns_target: target,
       dns_status: "active",
       ssl_status: "active",
       // Backfill provisioned timestamp for domains that were never fully provisioned.

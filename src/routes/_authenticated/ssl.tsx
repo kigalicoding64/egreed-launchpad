@@ -24,7 +24,6 @@ import {
   sslProgress,
   SSL_STATUS_META,
   DNS_STATUS_META,
-  ROOT_DOMAIN,
   type Domain,
 } from "@/lib/egreed";
 import { cn } from "@/lib/utils";
@@ -62,7 +61,7 @@ function SslStatusPage() {
     <div>
       <PageHeader
         title="SSL Certificates"
-        description={`Certificate issuance & renewal status for every ${ROOT_DOMAIN} domain.`}
+        description="Certificate issuance & renewal status for every project domain."
       />
 
       {/* Summary */}
