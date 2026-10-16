@@ -44,14 +44,13 @@ export async function resolveCloudflareConfig(
   return base;
 }
 
-/** The admin-selected main platform domain (server-side). */
-export async function getActiveRootDomainFromDb(db: { from: (t: string) => any }): Promise<string> {
-  const { ROOT_DOMAIN } = await import("@/lib/egreed");
+/** The admin-selected main platform domain (server-side), or null when none is active. */
+export async function getActiveRootDomainFromDb(db: { from: (t: string) => any }): Promise<string | null> {
   try {
     const { data } = await db.from("platform_domains").select("domain").eq("is_active", true).maybeSingle();
-    return (data?.domain as string) || ROOT_DOMAIN;
+    return (data?.domain as string) || null;
   } catch {
-    return ROOT_DOMAIN;
+    return null;
   }
 }
 
