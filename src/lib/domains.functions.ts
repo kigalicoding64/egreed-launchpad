@@ -35,19 +35,22 @@ export const provisionDomain = createServerFn({ method: "POST" })
       .maybeSingle();
 
     if (!domain) {
-      const { subdomainFor, slugify } = await import("@/lib/egreed");
+      const { slugify } = await import("@/lib/egreed");
+      const { getActiveRootDomainFromDb } = await import("@/lib/cloudflare.server");
+      const root = await getActiveRootDomainFromDb(client);
+      const full = project.domain ?? (root ? `${slugify(project.name) || "app"}.${root}` : null);
+      if (!full) {
+        throw new Error(
+          "No main platform domain is configured yet — an admin must add one on the Domains page.",
+        );
+      }
       const { data: created, error: cErr } = await client
         .from("domains")
         .insert({
           user_id: userId,
           project_id: project.id,
           subdomain: slugify(project.name) || "app",
-          full_domain:
-            project.domain ??
-            subdomainFor(
-              project.name,
-              await (await import("@/lib/cloudflare.server")).getActiveRootDomainFromDb(client),
-            ),
+          full_domain: full,
           ssl_status: "pending",
           dns_status: "pending",
           dns_type: "CNAME",
@@ -96,7 +99,7 @@ export const refreshDomain = createServerFn({ method: "POST" })
 
 /**
  * Deploy / refresh the Cloudflare edge worker that makes every project
- * subdomain (*.egreedtech.org) serve a real page instead of a 404.
+ * subdomain on the platform root domain serve a real page instead of a 404.
  */
 export const syncEdgeRouting = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -154,14 +157,19 @@ export const addDomain = createServerFn({ method: "POST" })
     const { slugify } = await import("@/lib/egreed");
     const { getActiveRootDomainFromDb } = await import("@/lib/cloudflare.server");
     const client = supabase as unknown as { from: (t: string) => any };
-    const ROOT_DOMAIN = await getActiveRootDomainFromDb(client);
+    const root = await getActiveRootDomainFromDb(client);
     // A bare label is treated as a platform subdomain.
+    if (!data.domain.includes(".") && !root) {
+      throw new Error(
+        "No main platform domain is configured yet — an admin must add one on the Domains page, or enter your full domain (e.g. app.mycompany.com).",
+      );
+    }
     const fullDomain = data.domain.includes(".")
       ? data.domain
-      : `${data.domain}.${ROOT_DOMAIN}`;
-    const isPlatform = fullDomain.endsWith(`.${ROOT_DOMAIN}`);
+      : `${data.domain}.${root}`;
+    const isPlatform = !!root && fullDomain.endsWith(`.${root}`);
     const subdomain = isPlatform
-      ? fullDomain.slice(0, -(ROOT_DOMAIN.length + 1))
+      ? fullDomain.slice(0, -(root!.length + 1))
       : slugify(fullDomain);
 
 
@@ -197,9 +205,12 @@ export const addDomain = createServerFn({ method: "POST" })
     }
 
     if (!isPlatform) {
+      const target = root
+        ? `ingress.${root}`
+        : `ingress.${fullDomain.split(".").slice(1).join(".")}`;
       await client
         .from("domains")
-        .update({ dns_target: `ingress.${ROOT_DOMAIN}` })
+        .update({ dns_target: target })
         .eq("id", created.id);
       return {
         ok: true,
@@ -207,7 +218,7 @@ export const addDomain = createServerFn({ method: "POST" })
         external: true,
         logs: [
           `Domain ${fullDomain} registered for ${project.name}.`,
-          `Add a CNAME record at your registrar: ${fullDomain} → ingress.${ROOT_DOMAIN}`,
+          `Add a CNAME record at your registrar: ${fullDomain} → ${target}`,
           "SSL is issued automatically once the record resolves.",
         ],
       };
@@ -237,7 +248,10 @@ export const verifyCustomDomain = createServerFn({ method: "POST" })
     if (!d || d.user_id !== userId) throw new Error("Domain not found");
     const { getActiveRootDomainFromDb } = await import("@/lib/cloudflare.server");
     const root = await getActiveRootDomainFromDb(client);
-    const target = (d.dns_target ?? `ingress.${root}`).toLowerCase();
+    const fallbackTarget = root
+      ? `ingress.${root}`
+      : `ingress.${d.full_domain.split(".").slice(1).join(".")}`;
+    const target = (d.dns_target ?? fallbackTarget).toLowerCase();
 
     const q = async (type: string) => {
       const r = await fetch(

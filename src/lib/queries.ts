@@ -38,7 +38,6 @@ import {
   getActiveRootDomain,
   slugify,
   frameworkMeta,
-  DNS_TARGET,
   type Deployment,
   type Domain,
   type EnvVar,
@@ -210,6 +209,12 @@ export function useCreateProject() {
     mutationFn: async (input: CreateProjectInput): Promise<Project> => {
       const user_id = await currentUserId();
       const domain = subdomainFor(input.name);
+      if (!domain) {
+        throw new Error(
+          "No main platform domain is configured yet — an admin must add one on the Domains page first.",
+        );
+      }
+      const dnsTarget = `ingress.${domain.split(".").slice(1).join(".")}`;
       const fm = frameworkMeta(input.framework);
 
       const { data: project, error } = await db
@@ -234,7 +239,7 @@ export function useCreateProject() {
       if (error) throw error;
       const p = project as Project;
 
-      // Assign the project's primary *.egreedtech.org subdomain in a pending
+      // Assign the project's primary platform subdomain in a pending
       // state. The deploy flow then provisions the real Cloudflare CNAME and
       // starts DNS propagation monitoring via the provisionDomain server fn.
       await db.from("domains").insert({
@@ -245,7 +250,7 @@ export function useCreateProject() {
         ssl_status: "pending",
         dns_status: "pending",
         dns_type: "CNAME",
-        dns_target: DNS_TARGET,
+        dns_target: dnsTarget,
         is_primary: true,
       });
 
@@ -273,7 +278,7 @@ export function useCreateProject() {
 }
 
 /**
- * Full deploy flow: create the project, then provision its *.egreedtech.org
+ * Full deploy flow: create the project, then provision its platform
  * domain (create the Cloudflare CNAME + start DNS propagation monitoring).
  * Domain provisioning failures don't block the deploy — the domain simply
  * stays in a pending/failed state and can be retried from the Domains/SSL page.
@@ -287,6 +292,12 @@ export function useDeployProject() {
     ): Promise<{ project: Project; domainProvisioned: boolean }> => {
       const user_id = await currentUserId();
       const domain = subdomainFor(input.name);
+      if (!domain) {
+        throw new Error(
+          "No main platform domain is configured yet — an admin must add one on the Domains page first.",
+        );
+      }
+      const dnsTarget = `ingress.${domain.split(".").slice(1).join(".")}`;
       const fm = frameworkMeta(input.framework);
 
       const { data: project, error } = await db
@@ -340,7 +351,7 @@ export function useDeployProject() {
         ssl_status: "pending",
         dns_status: "pending",
         dns_type: "CNAME",
-        dns_target: DNS_TARGET,
+        dns_target: dnsTarget,
         is_primary: true,
       });
 
@@ -624,8 +635,8 @@ export function usePlatformDomains() {
   });
 }
 
-/** The current main platform domain (e.g. egreedtech.org). */
-export function useRootDomain(): string {
+/** The current main platform domain, or null while none is configured. */
+export function useRootDomain(): string | null {
   const { data } = usePlatformDomains();
   return data?.find((r) => r.is_active)?.domain ?? getActiveRootDomain();
 }
@@ -741,7 +752,7 @@ export function useRollback() {
   });
 }
 
-/** Deploy/refresh the Cloudflare edge worker serving *.egreedtech.org. */
+/** Deploy/refresh the Cloudflare edge worker serving project subdomains. */
 export function useSyncEdgeRouting() {
   const sync = useServerFn(syncEdgeRouting);
   return useMutation({ mutationFn: async () => sync({ data: undefined as never }) });

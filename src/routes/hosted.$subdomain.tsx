@@ -1,17 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { CheckCircle2, Globe, Rocket, ShieldCheck } from "lucide-react";
-import { ROOT_DOMAIN } from "@/lib/egreed";
 
 export const Route = createFileRoute("/hosted/$subdomain")({
   component: HostedLanding,
   head: ({ params }) => ({
     meta: [
-      { title: `${params.subdomain}.${ROOT_DOMAIN} — Deployed via EGREED Deploy` },
+      { title: `${params.subdomain} — Deployed via EGREED Deploy` },
       {
         name: "description",
-        content: `${params.subdomain}.${ROOT_DOMAIN} is live and served by EGREED Deploy.`,
+        content: `${params.subdomain} is live and served by EGREED Deploy.`,
       },
-      { property: "og:title", content: `${params.subdomain}.${ROOT_DOMAIN}` },
+      { property: "og:title", content: `${params.subdomain}` },
       {
         property: "og:description",
         content: `Live deployment served by EGREED Deploy.`,
@@ -24,7 +23,7 @@ export const Route = createFileRoute("/hosted/$subdomain")({
 
 function HostedLanding() {
   const { subdomain } = Route.useParams();
-  const full = `${subdomain}.${ROOT_DOMAIN}`;
+  const full = subdomain;
   return (
     <main className="min-h-screen bg-background text-foreground">
       <div className="mx-auto flex min-h-screen max-w-3xl flex-col items-center justify-center px-6 py-16">
