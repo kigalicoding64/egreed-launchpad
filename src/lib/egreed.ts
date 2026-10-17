@@ -32,7 +32,7 @@ export type DnsStatus = "pending" | "active" | "failed";
 export type EnvTarget = "production" | "preview" | "development";
 
 // CNAME target that project subdomains point at (the platform ingress host).
-export const DNS_TARGET = "ingress.egreedtech.org";
+export const DNS_TARGET = "ingress.egreedtech.co.uk";
 
 export interface Profile {
   id: string;

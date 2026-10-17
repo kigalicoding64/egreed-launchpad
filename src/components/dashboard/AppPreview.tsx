@@ -84,7 +84,7 @@ export function AppPreview({
   const updateEnv = useUpdateEnvVar();
 
   const subdomain = useMemo(
-    () => (project.domain ?? "").replace(`.${ROOT_DOMAIN}`, ""),
+    () => (project.domain ?? "").split(".")[0],
     [project.domain],
   );
   const liveUrl = project.domain ? `https://${project.domain}` : project.repository_url;
