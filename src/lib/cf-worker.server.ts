@@ -25,7 +25,13 @@ export default {
     if (!sub || RESERVED.includes(sub)) return fetch(request);
 
     const target = new URL(PLATFORM);
-    target.pathname = "/hosted/" + encodeURIComponent(sub);
+    // Static assets (CSS, JS, fonts, images) must keep their real path, otherwise
+    // the browser receives HTML for a stylesheet and the page renders unstyled.
+    const p = url.pathname;
+    const isAsset =
+      p.startsWith("/assets/") || p.startsWith("/_build/") || p.startsWith("/_serverFn/") ||
+      /\\.(css|js|mjs|map|json|ico|png|jpe?g|gif|svg|webp|avif|woff2?|ttf|otf|txt|xml)$/i.test(p);
+    target.pathname = isAsset ? p : "/hosted/" + encodeURIComponent(sub);
     target.search = url.search;
 
     const upstream = await fetch(target.toString(), {
