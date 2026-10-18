@@ -1,5 +1,5 @@
 // Server-only: deploys the EGREED ingress Cloudflare Worker + zone route so that
-// every *.egreedtech.org project subdomain actually serves a live page instead
+// every project subdomain actually serves a live page instead
 // of a 404 from a non-existent origin.
 import { getCloudflareConfig, type CloudflareConfig } from "@/lib/cloudflare.server";
 
@@ -87,8 +87,10 @@ export interface EdgeSyncResult {
  * Idempotently deploy the ingress worker and bind it to `*.<zone>/*`.
  * Safe to call repeatedly — updates the script and reuses the existing route.
  */
-export async function syncIngressWorker(platformOrigin: string): Promise<EdgeSyncResult> {
-  const cfg = getCloudflareConfig();
+export async function syncIngressWorker(platformOrigin: string, zoneId?: string): Promise<EdgeSyncResult> {
+  const base = getCloudflareConfig();
+  const token = base?.token ?? process.env.CLOUDFLARE_API_TOKEN ?? process.env.CLOUDFLARE_API_Token;
+  const cfg = token && (zoneId ?? base?.zoneId) ? { token, zoneId: (zoneId ?? base!.zoneId) } : null;
   if (!cfg) {
     throw new Error("Cloudflare is not configured (missing CLOUDFLARE_API_TOKEN / CLOUDFLARE_ZONE_ID).");
   }

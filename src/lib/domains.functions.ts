@@ -103,11 +103,13 @@ export const refreshDomain = createServerFn({ method: "POST" })
  */
 export const syncEdgeRouting = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .handler(async () => {
+  .handler(async ({ context }) => {
     const origin =
       process.env.EGREED_PLATFORM_ORIGIN ?? "https://deploy-spark-africa.lovable.app";
+    const { data: active } = await (context.supabase as unknown as { from: (t: string) => any })
+      .from("platform_domains").select("zone_id").eq("is_active", true).maybeSingle();
     const { syncIngressWorker } = await import("@/lib/cf-worker.server");
-    const result = await syncIngressWorker(origin);
+    const result = await syncIngressWorker(origin, (active?.zone_id as string) || undefined);
     return { ok: true, logs: result.logs, pattern: result.pattern };
   });
 
