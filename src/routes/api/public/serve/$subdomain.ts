@@ -21,13 +21,14 @@ export const Route = createFileRoute("/api/public/serve/$subdomain")({
         const path = (url.searchParams.get("__path") || "/").slice(0, 512);
 
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-        const { data: project } = await supabaseAdmin
+        const { data: project, error: lookupError } = await supabaseAdmin
           .from("projects")
           .select("id, name, framework, source_type, repository_url, repository_name, branch, domain")
           .like("domain", `${sub}.%`)
           .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle();
+        if (lookupError) console.error("[serve] lookup", lookupError.message);
         if (!project) return page("Project not found", `No project is deployed at ${sub}.`, 404);
 
         const { data: envRows } = await supabaseAdmin
