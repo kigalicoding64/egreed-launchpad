@@ -67,7 +67,7 @@ export const Route = createFileRoute("/api/public/serve/$subdomain")({
           });
         } catch (err) {
           const msg = err instanceof Error ? err.message : "This app could not be loaded.";
-          return page(`${project.name} is unavailable`, msg.replace(/[<>&]/g, ""), 502);
+          return page(`${project.name} is unavailable`, msg.replace(/[<>&]/g, ""), 200);
         }
       },
     },
