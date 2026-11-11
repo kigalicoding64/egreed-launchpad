@@ -93,7 +93,7 @@ function HostedLanding() {
 
       <div className="relative mx-auto min-h-screen max-w-6xl px-5 py-6 sm:px-8 lg:px-10">
         {/* Navigation */}
-        <header className="flex items-center justify-between border-b border-border/[0.08] pb-6">
+        <header className="flex items-center justify-between border-b border-border pb-6">
           <a
             href="https://deploy.egreedtech.org"
             className="group flex items-center gap-3"
@@ -116,7 +116,7 @@ function HostedLanding() {
 
           <a
             href="https://deploy.egreedtech.org"
-            className="inline-flex items-center gap-2 rounded-lg border border-border/10 bg-foreground/[0.03] px-3 py-2 text-xs font-medium text-foreground/80 transition hover:border-primary/30 hover:bg-foreground/[0.06] hover:text-foreground sm:px-4 sm:text-sm"
+            className="inline-flex items-center gap-2 rounded-lg border border-border bg-foreground/[0.03] px-3 py-2 text-xs font-medium text-foreground/80 transition hover:border-primary/30 hover:bg-foreground/[0.06] hover:text-foreground sm:px-4 sm:text-sm"
           >
             Platform home
             <ArrowUpRight className="h-3.5 w-3.5" />
@@ -133,7 +133,7 @@ function HostedLanding() {
               Status unverified
             </div>
 
-            <div className="mt-8 flex h-20 w-20 items-center justify-center rounded-[26px] border border-border/10 bg-gradient-to-br from-primary/20 via-primary/10 to-transparent shadow-2xl shadow-primary/10">
+            <div className="mt-8 flex h-20 w-20 items-center justify-center rounded-[26px] border border-border bg-gradient-to-br from-primary/20 via-primary/10 to-transparent shadow-2xl shadow-primary/10">
               <Rocket className="h-9 w-9 text-primary" />
             </div>
 
@@ -155,7 +155,7 @@ function HostedLanding() {
             </p>
 
             {/* Project identity */}
-            <div className="mt-9 w-full max-w-2xl rounded-2xl border border-border/10 bg-card/90 p-4 text-left shadow-2xl shadow-background/40 sm:p-5">
+            <div className="mt-9 w-full max-w-2xl rounded-2xl border border-border bg-card/90 p-4 text-left shadow-2xl shadow-background/40 sm:p-5">
               <div className="flex items-center gap-3">
                 <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-foreground/[0.05]">
                   <Code2 className="h-5 w-5 text-foreground/80" />
@@ -170,12 +170,12 @@ function HostedLanding() {
                   </p>
                 </div>
 
-                <span className="hidden shrink-0 rounded-md border border-border/10 px-2 py-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground sm:inline-block">
+                <span className="hidden shrink-0 rounded-md border border-border px-2 py-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground sm:inline-block">
                   Hosted
                 </span>
               </div>
 
-              <div className="mt-4 border-t border-border/[0.07] pt-4">
+              <div className="mt-4 border-t border-border pt-4">
                 <div className="flex items-start gap-2.5 text-xs leading-5 text-muted-foreground">
                   <LockKeyhole className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
                   <p>
@@ -210,7 +210,7 @@ function HostedLanding() {
                 return (
                   <article
                     key={service.label}
-                    className="group rounded-2xl border border-border/[0.09] bg-card/80 p-5 transition duration-300 hover:-translate-y-1 hover:border-border/[0.16] hover:bg-card"
+                    className="group rounded-2xl border border-border bg-card/80 p-5 transition duration-300 hover:-translate-y-1 hover:border-border hover:bg-card"
                   >
                     <div className="flex items-center justify-between">
                       <div
@@ -240,7 +240,7 @@ function HostedLanding() {
 
           {/* Deployment information */}
           <div className="mt-8 grid gap-4 md:grid-cols-2">
-            <div className="rounded-2xl border border-border/[0.09] bg-card/70 p-5 sm:p-6">
+            <div className="rounded-2xl border border-border bg-card/70 p-5 sm:p-6">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
                   <Terminal className="h-5 w-5 text-primary" />
@@ -298,7 +298,7 @@ function HostedLanding() {
 
                 <a
                   href="https://deploy.egreedtech.org"
-                  className="mt-5 inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/10 transition hover:bg-primary"
+                  className="mt-5 inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/10 transition hover:bg-primary/90"
                 >
                   Open EGREED Deploy
                   <ArrowUpRight className="h-4 w-4" />
@@ -308,7 +308,7 @@ function HostedLanding() {
           </div>
 
           {/* Trust footer */}
-          <div className="mt-8 flex flex-col gap-3 rounded-2xl border border-border/[0.07] bg-foreground/[0.02] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="mt-8 flex flex-col gap-3 rounded-2xl border border-border bg-foreground/[0.02] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
               <CheckCircle2 className="h-4 w-4 shrink-0 text-primary" />
               <p className="text-xs leading-5 text-muted-foreground">
@@ -326,7 +326,7 @@ function HostedLanding() {
           </div>
         </section>
 
-        <footer className="border-t border-border/[0.08] py-6">
+        <footer className="border-t border-border py-6">
           <div className="flex flex-col items-center justify-between gap-3 text-xs text-muted-foreground/70 sm:flex-row">
             <p>
               © {new Date().getFullYear()} EGREED Technology.
