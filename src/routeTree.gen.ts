@@ -29,6 +29,7 @@ import { Route as AuthenticatedProjectsIdRouteImport } from './routes/_authentic
 import { Route as AuthenticatedWorkspaceIdRouteImport } from './routes/_authenticated/workspace.$id'
 import { Route as ApiPublicHooksEdgeSyncRouteImport } from './routes/api/public/hooks/edge-sync'
 import { Route as ApiPublicHooksSslRenewRouteImport } from './routes/api/public/hooks/ssl-renew'
+import { Route as ApiPublicServeSubdomainRouteImport } from './routes/api/public/serve/$subdomain'
 import { Route as ApiPublicWebhooksGithubRouteImport } from './routes/api/public/webhooks/github'
 import { Route as ApiPublicAuthEgreedCallbackRouteImport } from './routes/api/public/auth/egreed/callback'
 import { Route as ApiPublicAuthEgreedStartRouteImport } from './routes/api/public/auth/egreed/start'
@@ -135,6 +136,11 @@ const ApiPublicHooksSslRenewRoute = ApiPublicHooksSslRenewRouteImport.update({
   path: '/api/public/hooks/ssl-renew',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicServeSubdomainRoute = ApiPublicServeSubdomainRouteImport.update({
+  id: '/api/public/serve/$subdomain',
+  path: '/api/public/serve/$subdomain',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicWebhooksGithubRoute = ApiPublicWebhooksGithubRouteImport.update({
   id: '/api/public/webhooks/github',
   path: '/api/public/webhooks/github',
@@ -173,6 +179,7 @@ export interface FileRoutesByFullPath {
   '/projects/': typeof AuthenticatedProjectsIndexRoute
   '/api/public/hooks/edge-sync': typeof ApiPublicHooksEdgeSyncRoute
   '/api/public/hooks/ssl-renew': typeof ApiPublicHooksSslRenewRoute
+  '/api/public/serve/$subdomain': typeof ApiPublicServeSubdomainRoute
   '/api/public/webhooks/github': typeof ApiPublicWebhooksGithubRoute
   '/api/public/auth/egreed/callback': typeof ApiPublicAuthEgreedCallbackRoute
   '/api/public/auth/egreed/start': typeof ApiPublicAuthEgreedStartRoute
@@ -197,6 +204,7 @@ export interface FileRoutesByTo {
   '/projects': typeof AuthenticatedProjectsIndexRoute
   '/api/public/hooks/edge-sync': typeof ApiPublicHooksEdgeSyncRoute
   '/api/public/hooks/ssl-renew': typeof ApiPublicHooksSslRenewRoute
+  '/api/public/serve/$subdomain': typeof ApiPublicServeSubdomainRoute
   '/api/public/webhooks/github': typeof ApiPublicWebhooksGithubRoute
   '/api/public/auth/egreed/callback': typeof ApiPublicAuthEgreedCallbackRoute
   '/api/public/auth/egreed/start': typeof ApiPublicAuthEgreedStartRoute
@@ -223,6 +231,7 @@ export interface FileRoutesById {
   '/_authenticated/projects/': typeof AuthenticatedProjectsIndexRoute
   '/api/public/hooks/edge-sync': typeof ApiPublicHooksEdgeSyncRoute
   '/api/public/hooks/ssl-renew': typeof ApiPublicHooksSslRenewRoute
+  '/api/public/serve/$subdomain': typeof ApiPublicServeSubdomainRoute
   '/api/public/webhooks/github': typeof ApiPublicWebhooksGithubRoute
   '/api/public/auth/egreed/callback': typeof ApiPublicAuthEgreedCallbackRoute
   '/api/public/auth/egreed/start': typeof ApiPublicAuthEgreedStartRoute
@@ -249,6 +258,7 @@ export interface FileRouteTypes {
     | '/projects/'
     | '/api/public/hooks/edge-sync'
     | '/api/public/hooks/ssl-renew'
+    | '/api/public/serve/$subdomain'
     | '/api/public/webhooks/github'
     | '/api/public/auth/egreed/callback'
     | '/api/public/auth/egreed/start'
@@ -273,6 +283,7 @@ export interface FileRouteTypes {
     | '/projects'
     | '/api/public/hooks/edge-sync'
     | '/api/public/hooks/ssl-renew'
+    | '/api/public/serve/$subdomain'
     | '/api/public/webhooks/github'
     | '/api/public/auth/egreed/callback'
     | '/api/public/auth/egreed/start'
@@ -298,6 +309,7 @@ export interface FileRouteTypes {
     | '/_authenticated/projects/'
     | '/api/public/hooks/edge-sync'
     | '/api/public/hooks/ssl-renew'
+    | '/api/public/serve/$subdomain'
     | '/api/public/webhooks/github'
     | '/api/public/auth/egreed/callback'
     | '/api/public/auth/egreed/start'
@@ -314,6 +326,7 @@ export interface RootRouteChildren {
   HostedSubdomainRoute: typeof HostedSubdomainRoute
   ApiPublicHooksEdgeSyncRoute: typeof ApiPublicHooksEdgeSyncRoute
   ApiPublicHooksSslRenewRoute: typeof ApiPublicHooksSslRenewRoute
+  ApiPublicServeSubdomainRoute: typeof ApiPublicServeSubdomainRoute
   ApiPublicWebhooksGithubRoute: typeof ApiPublicWebhooksGithubRoute
   ApiPublicAuthEgreedCallbackRoute: typeof ApiPublicAuthEgreedCallbackRoute
   ApiPublicAuthEgreedStartRoute: typeof ApiPublicAuthEgreedStartRoute
@@ -461,6 +474,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksSslRenewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/serve/$subdomain': {
+      id: '/api/public/serve/$subdomain'
+      path: '/api/public/serve/$subdomain'
+      fullPath: '/api/public/serve/$subdomain'
+      preLoaderRoute: typeof ApiPublicServeSubdomainRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/webhooks/github': {
       id: '/api/public/webhooks/github'
       path: '/api/public/webhooks/github'
@@ -525,6 +545,7 @@ const rootRouteChildren: RootRouteChildren = {
   HostedSubdomainRoute: HostedSubdomainRoute,
   ApiPublicHooksEdgeSyncRoute: ApiPublicHooksEdgeSyncRoute,
   ApiPublicHooksSslRenewRoute: ApiPublicHooksSslRenewRoute,
+  ApiPublicServeSubdomainRoute: ApiPublicServeSubdomainRoute,
   ApiPublicWebhooksGithubRoute: ApiPublicWebhooksGithubRoute,
   ApiPublicAuthEgreedCallbackRoute: ApiPublicAuthEgreedCallbackRoute,
   ApiPublicAuthEgreedStartRoute: ApiPublicAuthEgreedStartRoute,
