@@ -191,7 +191,14 @@ function navBridge(basePath: string, currentPath: string) {
   const cfg = JSON.stringify({ base: basePath, path: currentPath });
   return `<script>(function(){
 var C=${cfg};
-function post(m){try{parent.postMessage(Object.assign({__egreedPreview:1},m),'*')}catch(e){}}
+var TOP=window.parent===window;
+function post(m){
+  if(TOP){
+    if(m.type==='navigate'){location.assign(m.path+(m.hash||''));}
+    else if(m.type==='external'){location.href=m.href;}
+    return;
+  }
+  try{parent.postMessage(Object.assign({__egreedPreview:1},m),'*')}catch(e){}}
 function toApp(u){
   try{
     var url=new URL(u,document.baseURI);

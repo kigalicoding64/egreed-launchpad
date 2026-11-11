@@ -24,15 +24,11 @@ export default {
     // Apex / reserved hosts pass straight through to their real origin.
     if (!sub || RESERVED.includes(sub)) return fetch(request);
 
+    // Serve the project's real app; the platform renders it from its source.
     const target = new URL(PLATFORM);
-    // Static assets (CSS, JS, fonts, images) must keep their real path, otherwise
-    // the browser receives HTML for a stylesheet and the page renders unstyled.
-    const p = url.pathname;
-    const isAsset =
-      p.startsWith("/assets/") || p.startsWith("/_build/") || p.startsWith("/_serverFn/") ||
-      /\\.(css|js|mjs|map|json|ico|png|jpe?g|gif|svg|webp|avif|woff2?|ttf|otf|txt|xml)$/i.test(p);
-    target.pathname = isAsset ? p : "/hosted/" + encodeURIComponent(sub);
+    target.pathname = "/api/public/serve/" + encodeURIComponent(sub);
     target.search = url.search;
+    target.searchParams.set("__path", url.pathname);
 
     const upstream = await fetch(target.toString(), {
       headers: {
