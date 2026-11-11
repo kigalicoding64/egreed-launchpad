@@ -10,16 +10,16 @@ export const WORKER_NAME = "egreed-ingress";
 const RESERVED = ["deploy", "www", "api", "ingress"];
 
 /** The worker source deployed to Cloudflare (ESM module syntax). */
-function workerSource(platformOrigin: string): string {
+function workerSource(platformOrigin: string, zoneName: string): string {
   return `const PLATFORM = ${JSON.stringify(platformOrigin)};
+const ZONE = ${JSON.stringify(zoneName)};
 const RESERVED = ${JSON.stringify(RESERVED)};
 
 export default {
   async fetch(request) {
     const url = new URL(request.url);
     const host = url.hostname;
-    const parts = host.split(".");
-    const sub = parts.length > 2 ? parts.slice(0, parts.length - 2).join(".") : "";
+    const sub = host.endsWith("." + ZONE) ? host.slice(0, host.length - ZONE.length - 1) : "";
 
     // Apex / reserved hosts pass straight through to their real origin.
     if (!sub || RESERVED.includes(sub)) return fetch(request);
@@ -122,7 +122,7 @@ export async function syncIngressWorker(platformOrigin: string, zoneId?: string)
   );
   form.append(
     "worker.js",
-    new Blob([workerSource(platformOrigin)], { type: "application/javascript+module" }),
+    new Blob([workerSource(platformOrigin, zoneName)], { type: "application/javascript+module" }),
     "worker.js",
   );
 
